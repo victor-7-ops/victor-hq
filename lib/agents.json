@@ -1,0 +1,4 @@
+{
+  "agents": [],
+  "_note": "Agents are auto-discovered from your OpenClaw workspace. This file serves as a fallback registry."
+}
