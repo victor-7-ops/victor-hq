@@ -44,7 +44,7 @@ export default function KanbanPage() {
         if (!r.ok) throw new Error('Failed to fetch agents')
         return r.json()
       })
-      .then((a: Agent[]) => setAgents(a))
+      .then((data) => setAgents(Array.isArray(data?.agents) ? data.agents : []))
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])
