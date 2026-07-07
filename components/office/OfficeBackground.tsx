@@ -30,7 +30,7 @@ function getTimeOfDayTint(): string {
 /** Static office atmosphere: grid floor, particles, decorative plants, time-of-day tint. */
 export const OfficeBackground = memo(function OfficeBackground() {
   const particles = useMemo(() => generateParticles(16), []);
-  const tint = useMemo(getTimeOfDayTint, []);
+  const tint = useMemo(() => getTimeOfDayTint(), []);
 
   return (
     <>

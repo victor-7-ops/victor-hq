@@ -94,6 +94,14 @@ interface DetectionResult {
   npmVersion: string | null
 }
 
+// Status icon helper
+function StatusIcon({ status }: { status: CheckStatus }) {
+  if (status === 'loading') return <Loader2 size={18} style={{ color: 'var(--text-tertiary)', animation: 'spin 1s linear infinite' }} />
+  if (status === 'ok') return <CheckCircle2 size={18} style={{ color: 'var(--system-green)' }} />
+  if (status === 'error') return <XCircle size={18} style={{ color: 'var(--system-red)' }} />
+  return <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--fill-tertiary)' }} />
+}
+
 // ---------------------------------------------------------------------------
 // Component
 // ---------------------------------------------------------------------------
@@ -178,34 +186,10 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
   }, [forceOpen]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
-  // Auto-detect prerequisites when reaching step 1
-  // ---------------------------------------------------------------------------
-
-  useEffect(() => {
-    if (visible && step === 1 && detectStatus === 'idle') {
-      runPrerequisiteCheck()
-    }
-  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-test gateway when reaching step 3
-  useEffect(() => {
-    if (visible && step === 3 && gatewayStatus === 'idle') {
-      testGatewayConnection()
-    }
-  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Auto-discover agents when reaching step 4
-  useEffect(() => {
-    if (visible && step === 4 && agentsStatus === 'idle') {
-      discoverAgents()
-    }
-  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // ---------------------------------------------------------------------------
   // Checks
   // ---------------------------------------------------------------------------
 
-  function runPrerequisiteCheck() {
+  const runPrerequisiteCheck = useCallback(() => {
     setDetectStatus('loading')
     fetch('/api/setup/detect')
       .then(r => {
@@ -222,9 +206,9 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
       .catch(() => {
         setDetectStatus('error')
       })
-  }
+  }, [])
 
-  function testGatewayConnection() {
+  const testGatewayConnection = useCallback(() => {
     setGatewayStatus('loading')
     setGatewayError(null)
     fetch('/api/crons')
@@ -239,9 +223,9 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
         setGatewayError('Could not reach OpenClaw gateway. Run: openclaw gateway run')
         setGatewayStatus('error')
       })
-  }
+  }, [])
 
-  function discoverAgents() {
+  const discoverAgents = useCallback(() => {
     setAgentsStatus('loading')
     setAgentsError(null)
     fetch('/api/agents')
@@ -267,7 +251,31 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
         setAgentsError('Could not reach agent registry. Is the server running?')
         setAgentsStatus('error')
       })
-  }
+  }, [])
+
+  // ---------------------------------------------------------------------------
+  // Auto-detect prerequisites when reaching step 1
+  // ---------------------------------------------------------------------------
+
+  useEffect(() => {
+    if (visible && step === 1 && detectStatus === 'idle') {
+      runPrerequisiteCheck()
+    }
+  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-test gateway when reaching step 3
+  useEffect(() => {
+    if (visible && step === 3 && gatewayStatus === 'idle') {
+      testGatewayConnection()
+    }
+  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Auto-discover agents when reaching step 4
+  useEffect(() => {
+    if (visible && step === 4 && agentsStatus === 'idle') {
+      discoverAgents()
+    }
+  }, [visible, step]) // eslint-disable-line react-hooks/exhaustive-deps
 
   // ---------------------------------------------------------------------------
   // Navigation
@@ -358,14 +366,6 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
     fontSize: 'var(--text-caption1)',
     color: 'var(--text-tertiary)',
     marginBottom: 'var(--space-1)',
-  }
-
-  // Status icon helper
-  const StatusIcon = ({ status }: { status: CheckStatus }) => {
-    if (status === 'loading') return <Loader2 size={18} style={{ color: 'var(--text-tertiary)', animation: 'spin 1s linear infinite' }} />
-    if (status === 'ok') return <CheckCircle2 size={18} style={{ color: 'var(--system-green)' }} />
-    if (status === 'error') return <XCircle size={18} style={{ color: 'var(--system-red)' }} />
-    return <div style={{ width: 18, height: 18, borderRadius: '50%', border: '2px solid var(--fill-tertiary)' }} />
   }
 
   // ---------------------------------------------------------------------------

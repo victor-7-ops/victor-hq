@@ -2015,6 +2015,16 @@ export default function MemoryPage() {
   const words = selected ? wordCount(selected.content) : 0;
   const breadcrumb = selected?.relativePath.split("/") ?? [];
 
+  /* Scroll to first match when opening a file from search */
+  useEffect(() => {
+    if (search && selected && contentRef.current) {
+      const mark = contentRef.current.querySelector("mark");
+      if (mark) {
+        setTimeout(() => mark.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
+      }
+    }
+  }, [selected, search]);
+
   /* Error state */
   if (error && files.length === 0) {
     return <ErrorState message={error} onRetry={refresh} />;
@@ -2136,16 +2146,6 @@ export default function MemoryPage() {
       );
     }
   }
-
-  /* Scroll to first match when opening a file from search */
-  useEffect(() => {
-    if (search && selected && contentRef.current) {
-      const mark = contentRef.current.querySelector("mark");
-      if (mark) {
-        setTimeout(() => mark.scrollIntoView({ behavior: "smooth", block: "center" }), 100);
-      }
-    }
-  }, [selected, search]);
 
   return (
     <div

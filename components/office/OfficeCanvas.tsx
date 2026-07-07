@@ -135,7 +135,7 @@ export function OfficeCanvas({ agents }: OfficeCanvasProps) {
 
   /* ── Tooltip state ───────────────────────────────────────────── */
   const [hoveredAgentId, setHoveredAgentId] = useState<string | null>(null);
-  const tooltipPosRef = useRef({ x: 0, y: 0 });
+  const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
 
   /* ── Combined agent lookup (API agents + council agents) ─────── */
   const agentLookup = useMemo(() => {
@@ -235,7 +235,7 @@ export function OfficeCanvas({ agents }: OfficeCanvasProps) {
   const handleHover = useCallback(
     (numericId: number | null, screenX: number, screenY: number) => {
       // Store position for next render
-      tooltipPosRef.current = { x: screenX, y: screenY };
+      setTooltipPos({ x: screenX, y: screenY });
 
       // Only trigger re-render when hovered agent changes
       const stringId =
@@ -292,8 +292,8 @@ export function OfficeCanvas({ agents }: OfficeCanvasProps) {
               }
             : null
         }
-        x={tooltipPosRef.current.x}
-        y={tooltipPosRef.current.y}
+        x={tooltipPos.x}
+        y={tooltipPos.y}
         visible={hoveredAgentId !== null}
       />
     </div>

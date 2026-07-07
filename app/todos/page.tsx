@@ -158,6 +158,15 @@ function renderMarkdownPreview(md: string): string {
   return html;
 }
 
+const EDITOR_TOOLS = [
+  { id: 'bold', icon: Bold, label: 'Bold' },
+  { id: 'italic', icon: Italic, label: 'Italic' },
+  { id: 'code', icon: Code, label: 'Code' },
+  { id: 'heading', icon: Heading2, label: 'Heading' },
+  { id: 'bullet-list', icon: List, label: 'Bullet list' },
+  { id: 'numbered-list', icon: ListOrdered, label: 'Numbered list' },
+] as const;
+
 function DescriptionEditor({
   value,
   onChange,
@@ -202,14 +211,16 @@ function DescriptionEditor({
     });
   }, [value, onChange]);
 
-  const tools: { icon: typeof Bold; label: string; action: () => void }[] = [
-    { icon: Bold, label: 'Bold', action: () => wrapSelection('**', '**') },
-    { icon: Italic, label: 'Italic', action: () => wrapSelection('*', '*') },
-    { icon: Code, label: 'Code', action: () => wrapSelection('`', '`') },
-    { icon: Heading2, label: 'Heading', action: () => insertLinePrefix('## ') },
-    { icon: List, label: 'Bullet list', action: () => insertLinePrefix('- ') },
-    { icon: ListOrdered, label: 'Numbered list', action: () => insertLinePrefix('1. ') },
-  ];
+  const runTool = useCallback((toolId: (typeof EDITOR_TOOLS)[number]['id']) => {
+    switch (toolId) {
+      case 'bold': return wrapSelection('**', '**');
+      case 'italic': return wrapSelection('*', '*');
+      case 'code': return wrapSelection('`', '`');
+      case 'heading': return insertLinePrefix('## ');
+      case 'bullet-list': return insertLinePrefix('- ');
+      case 'numbered-list': return insertLinePrefix('1. ');
+    }
+  }, [wrapSelection, insertLinePrefix]);
 
   return (
     <div>
@@ -227,20 +238,17 @@ function DescriptionEditor({
 
       {!preview && (
         <div className="flex gap-0.5 mb-1.5">
-          {tools.map((t) => {
-            const Icon = t.icon;
-            return (
-              <button
-                key={t.label}
-                type="button"
-                onClick={t.action}
-                title={t.label}
-                className="rounded p-1 text-text-muted hover:bg-surface-hover hover:text-text-primary"
-              >
-                <Icon className="h-3.5 w-3.5" />
-              </button>
-            );
-          })}
+          {EDITOR_TOOLS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => runTool(t.id)}
+              title={t.label}
+              className="rounded p-1 text-text-muted hover:bg-surface-hover hover:text-text-primary"
+            >
+              <t.icon className="h-3.5 w-3.5" />
+            </button>
+          ))}
         </div>
       )}
 

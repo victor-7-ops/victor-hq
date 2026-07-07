@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/refs -- this overlay intentionally re-renders every
+   rAF tick (see the tick state below) specifically to read live containerRef/panRef
+   values so it tracks the imperatively-driven canvas frame by frame. */
 import { useState, useEffect } from 'react'
 import type { ToolActivity } from '../types'
 import type { OfficeState } from '../engine/officeState'

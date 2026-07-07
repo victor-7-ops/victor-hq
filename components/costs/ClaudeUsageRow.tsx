@@ -29,15 +29,16 @@ function UsageRing({ pct, size = 56 }: { pct: number; size?: number }) {
 }
 
 function useCountdown(resetsAt: string | null): string {
-  const [now, setNow] = useState(Date.now())
+  const [now, setNow] = useState<number | null>(null)
 
   useEffect(() => {
+    setNow(Date.now())
     if (!resetsAt) return
     const id = setInterval(() => setNow(Date.now()), 1000)
     return () => clearInterval(id)
   }, [resetsAt])
 
-  if (!resetsAt) return '--'
+  if (!resetsAt || now === null) return '--'
   const diff = new Date(resetsAt).getTime() - now
   if (diff <= 0) return 'now'
   const h = Math.floor(diff / 3_600_000)

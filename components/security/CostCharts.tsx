@@ -63,19 +63,20 @@ function TokenTooltip({ active, payload, label }: any) {
 export default function CostCharts() {
   const { data } = useTokenUsage();
   const [period, setPeriod] = useState<Period>('7d');
+  const dailyChart = data?.dailyChart;
 
   const chartData = useMemo(() => {
-    if (!data?.dailyChart) return [];
+    if (!dailyChart) return [];
     const now = new Date();
     now.setHours(0, 0, 0, 0);
     const cutoff = new Date(now);
     cutoff.setDate(cutoff.getDate() - (period === '7d' ? 7 : 30));
 
-    return data.dailyChart.filter((entry) => {
+    return dailyChart.filter((entry) => {
       const entryDate = new Date(`${entry.date}T00:00:00`);
       return entryDate >= cutoff;
     });
-  }, [data?.dailyChart, period]);
+  }, [dailyChart, period]);
 
   const modelNames = useMemo(() => {
     if (!chartData?.length) return [];

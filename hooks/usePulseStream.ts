@@ -98,6 +98,8 @@ export function usePulseStream(): PulseStreamState {
     [scheduleInvalidation],
   );
 
+  const connectRef = useRef<() => void>(() => {});
+
   const connect = useCallback(() => {
     // Clean up existing connection
     if (eventSourceRef.current) {
@@ -122,12 +124,16 @@ export function usePulseStream(): PulseStreamState {
       es.close();
       // Reconnect after 5s
       reconnectTimerRef.current = setTimeout(() => {
-        connect();
+        connectRef.current();
       }, 5000);
     };
 
     eventSourceRef.current = es;
   }, [handleEvent]);
+
+  useEffect(() => {
+    connectRef.current = connect;
+  }, [connect]);
 
   useEffect(() => {
     connect();

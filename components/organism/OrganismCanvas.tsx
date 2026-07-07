@@ -701,7 +701,9 @@ export const OrganismCanvas = memo(function OrganismCanvas({
 
   const selectedAgentId = useDashboardStore((s) => s.selectedAgentId);
   const selectedAgentIdRef = useRef(selectedAgentId);
-  selectedAgentIdRef.current = selectedAgentId;
+  useEffect(() => {
+    selectedAgentIdRef.current = selectedAgentId;
+  }, [selectedAgentId]);
 
   // Rebuild simulation when data changes
   useEffect(() => {

@@ -26,13 +26,13 @@ function statusDotColor(status: AgentData['status']): string {
 
 interface TreeNodeProps {
   agent: AgentData;
-  children: AgentData[];
+  childAgents: AgentData[];
   selectedId: string | null;
   onSelect: (id: string) => void;
   depth: number;
 }
 
-function TreeNode({ agent, children, selectedId, onSelect, depth }: TreeNodeProps) {
+function TreeNode({ agent, childAgents, selectedId, onSelect, depth }: TreeNodeProps) {
   const isSelected = agent.id === selectedId;
 
   return (
@@ -70,13 +70,13 @@ function TreeNode({ agent, children, selectedId, onSelect, depth }: TreeNodeProp
       </button>
 
       {/* Child agents */}
-      {children.length > 0 && (
+      {childAgents.length > 0 && (
         <div>
-          {children.map((child) => (
+          {childAgents.map((child) => (
             <TreeNode
               key={child.id}
               agent={child}
-              children={[]}
+              childAgents={[]}
               selectedId={selectedId}
               onSelect={onSelect}
               depth={depth + 1}
@@ -135,7 +135,7 @@ export default function AgentTree({ agents, selectedId, onSelect }: AgentTreePro
         <TreeNode
           key={orch.id}
           agent={orch}
-          children={childrenMap[orch.id] ?? []}
+          childAgents={childrenMap[orch.id] ?? []}
           selectedId={selectedId}
           onSelect={onSelect}
           depth={0}
@@ -153,7 +153,7 @@ export default function AgentTree({ agents, selectedId, onSelect }: AgentTreePro
           <TreeNode
             key={agent.id}
             agent={agent}
-            children={[]}
+            childAgents={[]}
             selectedId={selectedId}
             onSelect={onSelect}
             depth={0}

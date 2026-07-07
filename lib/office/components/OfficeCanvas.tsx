@@ -1,3 +1,6 @@
+/* eslint-disable react-hooks/immutability -- officeState/editorState are intentional
+   mutable game-engine class instances (not React state), mutated only from event
+   handlers below, never during render. See lib/office/engine/officeState.ts. */
 import { useRef, useEffect, useCallback } from 'react'
 import type { OfficeState } from '../engine/officeState'
 import type { EditorState } from '../editor/editorState'

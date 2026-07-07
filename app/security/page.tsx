@@ -508,6 +508,12 @@ export default function SystemPulsePage() {
     refetchInterval: 10000,
   });
 
+  // --- Snapshot of "now" for freshness bucketing (avoids calling Date.now() during render) ---
+  const [nowMs, setNowMs] = useState(0);
+  useEffect(() => {
+    setNowMs(Date.now());
+  }, [securityData]);
+
   // --- Cost range state ---
   const [costRange, setCostRange] = useState<string>('30d');
   const [customFrom, setCustomFrom] = useState<string>('');
@@ -600,10 +606,11 @@ export default function SystemPulsePage() {
     setUnacknowledgedAlerts(unackedCount);
   }, [unackedCount, setUnacknowledgedAlerts]);
 
+  const spendByProvider = costData?.spendByProvider;
   const providerPieData = useMemo(() => {
-    if (!costData?.spendByProvider) return [];
-    return Object.entries(costData.spendByProvider).map(([name, value]) => ({ name, value }));
-  }, [costData?.spendByProvider]);
+    if (!spendByProvider) return [];
+    return Object.entries(spendByProvider).map(([name, value]) => ({ name, value }));
+  }, [spendByProvider]);
 
   const sparklineData = useMemo(() => {
     const history = (costData as any)?.hourlyHistory ?? costData?.dailyHistory;
@@ -1357,7 +1364,7 @@ export default function SystemPulsePage() {
                     </thead>
                     <tbody className="divide-y divide-border-subtle">
                       {(() => {
-                        const now = Date.now();
+                        const now = nowMs;
                         const cutoff = 24 * 60 * 60 * 1000;
                         const active = sortedProviders.filter(
                           (p) => p.lastSuccessfulCall && now - new Date(p.lastSuccessfulCall).getTime() < cutoff,
