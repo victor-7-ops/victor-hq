@@ -1,47 +1,62 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getMemoryEntries, createMemoryEntry, markMemoryRead, getUnreadCount } from '@/lib/db/queries';
+import { getMemoryFiles, getMemoryConfig, getMemoryStatus, computeMemoryStats } from '@/lib/memory';
+import { computeMemoryHealth } from '@/lib/memory-health';
+import { getMem0Config, getMem0Memories } from '@/lib/mem0';
+import { writeMemoryFile, PathValidationError } from '@/lib/memory-write';
 import { errorMessage } from '@/lib/api-error';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
-    const { searchParams } = new URL(request.url);
-    const type = searchParams.get('type') || undefined;
-    const search = searchParams.get('search') || undefined;
-    const limit = parseInt(searchParams.get('limit') || '50', 10);
-    const offset = parseInt(searchParams.get('offset') || '0', 10);
+    const files = await getMemoryFiles();
+    const config = getMemoryConfig();
+    const status = getMemoryStatus();
+    const stats = computeMemoryStats(files);
+    const health = computeMemoryHealth(files, config, status, stats);
 
-    const entries = getMemoryEntries({ type, search, limit, offset });
-    const unreadCount = getUnreadCount();
+    const mem0Config = getMem0Config();
+    const mem0 = mem0Config
+      ? {
+          enabled: mem0Config.enabled,
+          userId: mem0Config.userId,
+          memories: await getMem0Memories(),
+          count: 0,
+        }
+      : null;
+    if (mem0) mem0.count = mem0.memories.length;
 
-    return NextResponse.json({ entries, unreadCount });
+    return NextResponse.json({ files, config, status, stats, health, mem0 });
   } catch (error: unknown) {
-    return NextResponse.json({ error: errorMessage(error), entries: [], unreadCount: 0 }, { status: 500 });
+    return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
 
-export async function POST(request: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
+    const { relativePath, content, expectedLastModified } = body;
 
-    if (body.action === 'markRead') {
-      markMemoryRead(body.id);
-      return NextResponse.json({ success: true });
+    if (typeof relativePath !== 'string' || typeof content !== 'string') {
+      return NextResponse.json({ error: 'relativePath and content are required' }, { status: 400 });
     }
 
-    const entry = createMemoryEntry({
-      type: body.type || 'note',
-      title: body.title || 'Untitled',
-      content: body.content || '',
-      agentId: body.agentId || null,
-      tags: body.tags || [],
-      isRead: false,
-      metadata: body.metadata || {},
-    });
-
-    return NextResponse.json({ entry });
+    const result = writeMemoryFile(relativePath, content, expectedLastModified);
+    return NextResponse.json(result);
   } catch (error: unknown) {
+    if (error instanceof PathValidationError) {
+      return NextResponse.json({ error: error.message }, { status: 400 });
+    }
+    const code = (error as NodeJS.ErrnoException)?.code;
+    if (code === 'ENOENT') {
+      return NextResponse.json({ error: errorMessage(error) }, { status: 404 });
+    }
+    if (code === 'ECONFLICT') {
+      return NextResponse.json({ error: errorMessage(error) }, { status: 409 });
+    }
+    if (code === 'EINVAL' || code === 'E2BIG') {
+      return NextResponse.json({ error: errorMessage(error) }, { status: 400 });
+    }
     return NextResponse.json({ error: errorMessage(error) }, { status: 500 });
   }
 }
