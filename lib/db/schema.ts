@@ -479,4 +479,10 @@ const MIGRATIONS = [
       );
     `,
   },
+  {
+    name: '025_memory_entries_composite_index',
+    sql: `
+      CREATE INDEX IF NOT EXISTS idx_memory_type_agent_created ON memory_entries(type, agent, created_at);
+    `,
+  },
 ];
