@@ -7,6 +7,7 @@ import { gatewayBaseUrl } from '@/lib/env'
 const openai = new OpenAI({
   baseURL: gatewayBaseUrl(),
   apiKey: process.env.OPENCLAW_GATEWAY_TOKEN,
+  timeout: 5000,
 })
 
 const MAX_TITLE = 500

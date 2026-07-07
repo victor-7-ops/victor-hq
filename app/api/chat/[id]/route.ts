@@ -10,6 +10,7 @@ import { gatewayBaseUrl } from '@/lib/env'
 const openai = new OpenAI({
   baseURL: gatewayBaseUrl(),
   apiKey: process.env.OPENCLAW_GATEWAY_TOKEN,
+  timeout: 5000,
 })
 
 const GATEWAY_TOKEN = process.env.OPENCLAW_GATEWAY_TOKEN || ''
@@ -65,11 +66,20 @@ export async function POST(
     const attachments = extractImageAttachments([lastUserMsg!])
     const textPrompt = buildTextPrompt(systemPrompt, messages)
 
-    const response = await sendViaOpenClaw({
-      gatewayToken: GATEWAY_TOKEN,
-      message: textPrompt,
-      attachments,
-    })
+    let response: string | null
+    try {
+      response = await sendViaOpenClaw({
+        gatewayToken: GATEWAY_TOKEN,
+        message: textPrompt,
+        attachments,
+      })
+    } catch (err) {
+      console.error('sendViaOpenClaw error:', err)
+      return new Response(
+        JSON.stringify({ error: 'Chat failed. Make sure OpenClaw gateway is running.' }),
+        { status: 502, headers: { 'Content-Type': 'application/json' } }
+      )
+    }
 
     // Return as a non-streaming SSE response (complete text at once)
     const encoder = new TextEncoder()
