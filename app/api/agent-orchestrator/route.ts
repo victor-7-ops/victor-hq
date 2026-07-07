@@ -5,12 +5,21 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function GET() {
   try {
-    const [projects, sessions] = await Promise.all([listProjects(), listSessions()])
+    const [projectsResult, sessionsResult] = await Promise.all([listProjects(), listSessions()])
     const owners = getAllProjectOwners().reduce<Record<string, string>>((acc, o) => {
       acc[o.projectId] = o.agentId
       return acc
     }, {})
-    return NextResponse.json({ projects, sessions, owners })
+    const stale = projectsResult.stale || sessionsResult.stale
+    return NextResponse.json({
+      projects: projectsResult.items,
+      sessions: sessionsResult.items,
+      owners,
+      _meta: {
+        stale,
+        cachedAt: projectsResult.cachedAt || sessionsResult.cachedAt || null,
+      },
+    })
   } catch (err) {
     return apiErrorResponse(err, 'Failed to load Agent Orchestrator state')
   }

@@ -1,6 +1,7 @@
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { homedir } from 'os'
+import { getAOCache, setAOCache } from '@/lib/db/queries'
 
 export type AOSessionStatus =
   | 'working' | 'pr_open' | 'draft' | 'ci_failed' | 'review_pending'
@@ -85,18 +86,48 @@ function validProjects(items: unknown): AOProject[] {
   )
 }
 
-export function listProjects(): Promise<AOProject[]> {
-  return cached('projects', async () => {
-    const data = await aoFetch<{ projects: unknown }>('/projects')
-    return validProjects(data.projects)
-  })
+export interface AOListResult<T> {
+  items: T[]
+  stale: boolean
+  cachedAt: string | null
 }
 
-export function listSessions(): Promise<AOSession[]> {
-  return cached('sessions', async () => {
-    const data = await aoFetch<{ sessions: unknown }>('/sessions')
-    return validSessions(data.sessions)
-  })
+/** Fetch live data via `fn`, caching it in SQLite on success. On failure, fall back
+ *  to the last-known cached data (marked stale) instead of throwing -- list endpoints
+ *  only; mutations still propagate errors. */
+async function withOfflineFallback<T>(
+  cacheKey: string,
+  fn: () => Promise<T[]>,
+): Promise<AOListResult<T>> {
+  try {
+    const items = await fn()
+    setAOCache(cacheKey, items)
+    return { items, stale: false, cachedAt: null }
+  } catch (err) {
+    const cached = getAOCache<T[]>(cacheKey)
+    if (cached) {
+      return { items: cached.data, stale: true, cachedAt: cached.cachedAt }
+    }
+    throw err
+  }
+}
+
+export function listProjects(): Promise<AOListResult<AOProject>> {
+  return withOfflineFallback('projects', () =>
+    cached('projects', async () => {
+      const data = await aoFetch<{ projects: unknown }>('/projects')
+      return validProjects(data.projects)
+    }),
+  )
+}
+
+export function listSessions(): Promise<AOListResult<AOSession>> {
+  return withOfflineFallback('sessions', () =>
+    cached('sessions', async () => {
+      const data = await aoFetch<{ sessions: unknown }>('/sessions')
+      return validSessions(data.sessions)
+    }),
+  )
 }
 
 export function registerProject(path: string, name?: string): Promise<AOProject> {

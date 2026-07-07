@@ -469,4 +469,14 @@ const MIGRATIONS = [
       CREATE INDEX IF NOT EXISTS idx_ao_project_owners_agent ON ao_project_owners(agent_id);
     `,
   },
+  {
+    name: '024_ao_cache',
+    sql: `
+      CREATE TABLE IF NOT EXISTS ao_cache (
+        key TEXT PRIMARY KEY,
+        data_json TEXT NOT NULL,
+        cached_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
+    `,
+  },
 ];

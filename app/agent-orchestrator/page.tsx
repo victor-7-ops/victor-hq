@@ -15,6 +15,8 @@ interface AOState {
   projects: AOProject[]
   sessions: AOSession[]
   owners: Record<string, string>
+  stale: boolean
+  cachedAt: string | null
 }
 
 interface AgentOption {
@@ -33,6 +35,8 @@ async function fetchAOState(): Promise<AOState> {
     projects: Array.isArray(data.projects) ? data.projects : [],
     sessions: Array.isArray(data.sessions) ? data.sessions : [],
     owners: data.owners && typeof data.owners === 'object' ? data.owners : {},
+    stale: Boolean(data._meta?.stale),
+    cachedAt: data._meta?.cachedAt ?? null,
   }
 }
 
@@ -85,6 +89,7 @@ export default function AgentOrchestratorPage() {
   const projects = data?.projects ?? []
   const sessions = data?.sessions ?? []
   const owners = data?.owners ?? {}
+  const stale = data?.stale ?? false
 
   const { data: agentOptions = [] } = useQuery({
     queryKey: ['agent-orchestrator', 'agent-options'],
@@ -184,7 +189,12 @@ export default function AgentOrchestratorPage() {
   }
 
   if (error && !isLoading) {
-    return <ErrorState message={error instanceof Error ? error.message : 'Failed to load Agent Orchestrator state'} onRetry={() => refetch()} />
+    return (
+      <ErrorState
+        message="Agent Orchestrator is not running. Start the daemon and retry."
+        onRetry={() => refetch()}
+      />
+    )
   }
 
   const byColumn: Record<Column, AOSession[]> = {
@@ -263,6 +273,22 @@ export default function AgentOrchestratorPage() {
               {actionError}
             </div>
           )}
+          {stale && (
+            <div
+              role="status"
+              className="flex items-center gap-2"
+              style={{
+                marginTop: 8, fontSize: 'var(--text-caption1)', color: 'var(--system-yellow, #eab308)',
+                background: 'var(--fill-secondary)', borderRadius: 'var(--radius-sm)', padding: '6px 10px',
+              }}
+            >
+              Agent Orchestrator not running — showing cached data
+              {data?.cachedAt ? ` from ${formatRelativeTime(data.cachedAt)}` : ''}.
+              <button onClick={() => refetch()} className="focus-ring" style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'inherit', textDecoration: 'underline', padding: 0 }}>
+                Retry
+              </button>
+            </div>
+          )}
         </div>
 
         {isLoading ? (
@@ -288,7 +314,7 @@ export default function AgentOrchestratorPage() {
             </div>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-4 overflow-auto" style={{ padding: 24, flex: 1 }}>
+          <div className="grid grid-cols-4 gap-4 overflow-auto" style={{ padding: 24, flex: 1, opacity: stale ? 0.6 : 1 }}>
             {COLUMNS.map(col => (
               <div key={col}>
                 <div className="flex items-center gap-2" style={{ marginBottom: 10 }}>

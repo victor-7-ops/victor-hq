@@ -858,3 +858,23 @@ export function getAllProjectOwners(): AOProjectOwner[] {
   const rows = getDb().prepare('SELECT project_id, agent_id, assigned_at FROM ao_project_owners').all() as any[];
   return rows.map(r => ({ projectId: r.project_id, agentId: r.agent_id, assignedAt: r.assigned_at }));
 }
+
+// --- Agent Orchestrator offline cache ---
+
+export function getAOCache<T>(key: string): { data: T; cachedAt: string } | null {
+  const row = getDb().prepare('SELECT data_json, cached_at FROM ao_cache WHERE key = ?').get(key) as any;
+  if (!row) return null;
+  try {
+    return { data: JSON.parse(row.data_json) as T, cachedAt: row.cached_at };
+  } catch {
+    return null;
+  }
+}
+
+export function setAOCache(key: string, data: unknown): void {
+  getDb().prepare(`
+    INSERT INTO ao_cache (key, data_json, cached_at)
+    VALUES (?, ?, datetime('now'))
+    ON CONFLICT(key) DO UPDATE SET data_json = excluded.data_json, cached_at = excluded.cached_at
+  `).run(key, JSON.stringify(data));
+}
