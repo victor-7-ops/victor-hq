@@ -12,191 +12,14 @@ import type { SlashCommand } from '@/lib/slash-commands'
 import { FileAttachment } from './FileAttachment'
 import { MediaPreview } from './MediaPreview'
 import { AgentAvatar } from '@/components/AgentAvatar'
+import { MessageBubble } from './MessageBubble'
+import { SlashCommandMenu } from './SlashCommandMenu'
 
 interface ConversationViewProps {
   agent: Agent
   conversation: Conversation
   onUpdate: (agentId: string, updater: (prev: ConversationStore) => ConversationStore) => void
   onBack?: () => void
-}
-
-/* ── Markdown rendering ──────────────────────────────────── */
-
-function inlineFormat(text: string): React.ReactNode {
-  const parts: React.ReactNode[] = []
-  // Match URLs, bold, inline code, italic — in priority order
-  const regex = /(https?:\/\/[^\s<]+[^\s<.,;:!?)}\]'"])|(\*\*(.+?)\*\*)|(`([^`]+)`)|\*([^*]+)\*/g
-  let last = 0
-  let match
-
-  while ((match = regex.exec(text)) !== null) {
-    if (match.index > last) parts.push(text.slice(last, match.index))
-    if (match[1]) {
-      // URL
-      parts.push(
-        <a
-          key={match.index}
-          href={match[1]}
-          target="_blank"
-          rel="noopener noreferrer"
-          style={{ color: 'var(--system-blue)', textDecoration: 'underline', textUnderlineOffset: 2 }}
-        >
-          {match[1]}
-        </a>
-      )
-    } else if (match[2]) {
-      // Bold
-      parts.push(<strong key={match.index} style={{ fontWeight: 'var(--weight-bold)' }}>{match[3]}</strong>)
-    } else if (match[4]) {
-      // Inline code
-      parts.push(
-        <code key={match.index} style={{
-          background: 'var(--code-bg)',
-          border: '1px solid var(--code-border)',
-          borderRadius: 5,
-          padding: '1px 5px',
-          fontSize: '0.88em',
-          fontFamily: '"SF Mono", Menlo, monospace',
-          color: 'var(--code-text)',
-        }}>{match[5]}</code>
-      )
-    } else if (match[6]) {
-      // Italic
-      parts.push(<em key={match.index} style={{ fontStyle: 'italic', opacity: 0.85 }}>{match[6]}</em>)
-    }
-    last = match.index + match[0].length
-  }
-  if (last < text.length) parts.push(text.slice(last))
-  return parts.length === 1 ? parts[0] : <>{parts}</>
-}
-
-function CodeBlock({ code, keyProp }: { code: string; keyProp: number }) {
-  const [copied, setCopied] = useState(false)
-
-  function handleCopy() {
-    navigator.clipboard.writeText(code).then(() => {
-      setCopied(true)
-      setTimeout(() => setCopied(false), 1500)
-    })
-  }
-
-  return (
-    <div key={keyProp} className="code-block-wrapper">
-      <button
-        className="code-copy-btn focus-ring"
-        onClick={handleCopy}
-        aria-label="Copy code"
-      >
-        {copied ? 'Copied!' : 'Copy'}
-      </button>
-      <pre><code>{code}</code></pre>
-    </div>
-  )
-}
-
-function formatMessage(content: string): React.ReactNode {
-  if (!content) return null
-  const lines = content.split('\n')
-  const result: React.ReactNode[] = []
-  let inCodeBlock = false
-  let codeLines: string[] = []
-
-  for (let i = 0; i < lines.length; i++) {
-    const line = lines[i]
-    if (line.startsWith('```')) {
-      if (!inCodeBlock) {
-        inCodeBlock = true
-        codeLines = []
-      } else {
-        inCodeBlock = false
-        result.push(<CodeBlock key={i} keyProp={i} code={codeLines.join('\n')} />)
-        codeLines = []
-      }
-      continue
-    }
-    if (inCodeBlock) { codeLines.push(line); continue }
-    if (line.trim() === '') { result.push(<div key={`space-${i}`} style={{ height: 6 }} />); continue }
-    if (line.match(/^[-*] /)) {
-      result.push(
-        <div key={i} style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 2 }}>
-          <span style={{ color: 'var(--accent)', flexShrink: 0, marginTop: 1 }}>&bull;</span>
-          <span>{inlineFormat(line.slice(2))}</span>
-        </div>
-      )
-      continue
-    }
-    if (line.match(/^\d+\. /)) {
-      const num = line.match(/^(\d+)\. /)?.[1]
-      result.push(
-        <div key={i} style={{ display: 'flex', gap: 'var(--space-2)', marginBottom: 2 }}>
-          <span style={{ color: 'var(--accent)', flexShrink: 0, fontWeight: 'var(--weight-semibold)', minWidth: 16 }}>{num}.</span>
-          <span>{inlineFormat(line.replace(/^\d+\. /, ''))}</span>
-        </div>
-      )
-      continue
-    }
-    if (line.startsWith('### ')) {
-      result.push(
-        <div key={i} style={{ fontWeight: 'var(--weight-semibold)', fontSize: 'var(--text-footnote)', marginTop: 'var(--space-2)', marginBottom: 2 }}>
-          {inlineFormat(line.slice(4))}
-        </div>
-      )
-      continue
-    }
-    if (line.startsWith('## ')) {
-      result.push(
-        <div key={i} style={{ fontWeight: 'var(--weight-bold)', fontSize: 'var(--text-subheadline)', marginTop: 'var(--space-3)', marginBottom: 3 }}>
-          {inlineFormat(line.slice(3))}
-        </div>
-      )
-      continue
-    }
-    if (line.startsWith('# ')) {
-      result.push(
-        <div key={i} style={{ fontWeight: 'var(--weight-bold)', fontSize: 'var(--text-body)', marginTop: 'var(--space-3)', marginBottom: 'var(--space-1)' }}>
-          {inlineFormat(line.slice(2))}
-        </div>
-      )
-      continue
-    }
-    result.push(<div key={i} style={{ marginBottom: 1 }}>{inlineFormat(line)}</div>)
-  }
-  return <>{result}</>
-}
-
-/* ── Timestamp formatting ──────────────────────────────── */
-
-function formatTimestamp(ts: number): string {
-  const now = new Date()
-  const date = new Date(ts)
-  const isToday = now.toDateString() === date.toDateString()
-  const yesterday = new Date(now)
-  yesterday.setDate(yesterday.getDate() - 1)
-  const isYesterday = yesterday.toDateString() === date.toDateString()
-  const time = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-
-  if (isToday) return `Today ${time}`
-  if (isYesterday) return `Yesterday ${time}`
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + ` ${time}`
-}
-
-function shouldShowTimestamp(messages: Message[], index: number): boolean {
-  if (messages[index].role === 'system') return false
-  // Find previous non-system message for gap comparison
-  let prev = index - 1
-  while (prev >= 0 && messages[prev].role === 'system') prev--
-  if (prev < 0) return true
-  const gap = messages[index].timestamp - messages[prev].timestamp
-  return gap > 5 * 60 * 1000 // 5 minutes
-}
-
-function shouldShowAvatar(messages: Message[], index: number): boolean {
-  if (messages[index].role === 'system') return false
-  // Find previous non-system message for role comparison
-  let prev = index - 1
-  while (prev >= 0 && messages[prev].role === 'system') prev--
-  if (prev < 0) return true
-  return messages[prev].role !== messages[index].role
 }
 
 /* ── Helper: convert File to base64 MediaAttachment ────── */
@@ -809,178 +632,16 @@ export function ConversationView({ agent, conversation, onUpdate, onBack }: Conv
           </div>
         )}
 
-        {messages.map((msg, i) => {
-          const isUser = msg.role === 'user'
-          const showAvatar = shouldShowAvatar(messages, i)
-          const showTimestamp = shouldShowTimestamp(messages, i)
-          // System messages render their own block — skip user/assistant layout logic
-          const isSystem = msg.role === 'system'
-          const isLastAssistant = msg.role === 'assistant' && i === messages.length - 1 && (isStreaming || msg.isStreaming)
-          const showTypingDots = isLastAssistant && !msg.content
-          const media = isSystem ? [] : (msg.media || parseMedia(msg.content))
-
-          // Strip media URLs from text for display
-          let textContent = msg.content
-          if (!isSystem && media.length > 0 && !msg.media) {
-            media.forEach(m => {
-              textContent = textContent.replace(m.url, '')
-              textContent = textContent.replace(/!\[[^\]]*\]\([^\)]+\)/g, '')
-            })
-            textContent = textContent.trim()
-          }
-          // Hide auto-generated content labels for media-only messages
-          if (!isSystem && msg.media && msg.media.length > 0) {
-            const isAutoLabel = textContent.startsWith('[') && textContent.endsWith(']')
-            if (isAutoLabel) textContent = ''
-          }
-
-          return (
-            <div key={msg.id || i} className="animate-fade-in">
-              {/* Timestamp divider */}
-              {showTimestamp && (
-                <div style={{
-                  textAlign: 'center',
-                  padding: 'var(--space-3) 0',
-                  fontSize: 'var(--text-caption2)',
-                  color: 'var(--text-tertiary)',
-                }}>
-                  {formatTimestamp(msg.timestamp)}
-                </div>
-              )}
-
-              {/* Spacing between role switches (skip for system messages) */}
-              {!showTimestamp && i > 0 && msg.role !== 'system' && (() => {
-                let prev = i - 1
-                while (prev >= 0 && messages[prev].role === 'system') prev--
-                const prevRole = prev >= 0 ? messages[prev].role : msg.role
-                return <div style={{ height: prevRole !== msg.role ? 'var(--space-4)' : 'var(--space-1)' }} />
-              })()}
-
-              {/* User message */}
-              {isUser && (
-                <div style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  padding: '0 var(--space-4)',
-                  marginBottom: 'var(--space-1)',
-                }}>
-                  {textContent && (
-                    <div className="msg-user" style={{
-                      maxWidth: '75%',
-                      padding: 'var(--space-3) var(--space-4)',
-                      borderRadius: 'var(--radius-lg) var(--radius-lg) var(--radius-sm) var(--radius-lg)',
-                      background: 'var(--accent)',
-                      color: 'var(--accent-contrast)',
-                      fontSize: 'var(--text-subheadline)',
-                      lineHeight: 'var(--leading-relaxed)',
-                      fontWeight: 'var(--weight-medium)',
-                      boxShadow: 'var(--shadow-subtle)',
-                    }}>
-                      {textContent}
-                    </div>
-                  )}
-                  {media.length > 0 && (
-                    <div style={{ maxWidth: '75%' }}>
-                      {renderMedia(media, true)}
-                    </div>
-                  )}
-                </div>
-              )}
-
-              {/* System message (slash command result) */}
-              {msg.role === 'system' && (
-                <div style={{
-                  padding: '0 var(--space-4)',
-                  marginBottom: 'var(--space-1)',
-                }}>
-                  <div style={{
-                    maxWidth: '85%',
-                    margin: '0 auto',
-                    padding: 'var(--space-3) var(--space-4)',
-                    borderRadius: 'var(--radius-md)',
-                    background: 'var(--fill-tertiary)',
-                    borderLeft: '3px solid var(--accent)',
-                    color: 'var(--text-secondary)',
-                    fontSize: 'var(--text-footnote)',
-                    lineHeight: 'var(--leading-relaxed)',
-                  }}>
-                    {formatMessage(msg.content)}
-                  </div>
-                </div>
-              )}
-
-              {/* Assistant message */}
-              {msg.role === 'assistant' && (
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'flex-start',
-                  padding: '0 var(--space-4)',
-                  marginBottom: 'var(--space-1)',
-                }}>
-                  {/* Small avatar */}
-                  <div style={{
-                    flexShrink: 0,
-                    width: 28,
-                    marginRight: 'var(--space-2)',
-                  }}>
-                    {showAvatar ? (
-                      <AgentAvatar agent={agent} size={28} borderRadius={14} />
-                    ) : <div style={{ width: 28 }} />}
-                  </div>
-
-                  <div style={{ maxWidth: '75%', display: 'flex', flexDirection: 'column' }}>
-                    {/* Typing indicator */}
-                    {showTypingDots && (
-                      <div className="msg-assistant" style={{
-                        padding: 'var(--space-3) var(--space-4)',
-                        borderRadius: 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)',
-                        background: 'var(--material-thin)',
-                        border: '1px solid var(--separator)',
-                      }}>
-                        <div style={{ display: 'flex', gap: 4, alignItems: 'center', height: 16 }}>
-                          <span className="typing-dot" style={{ animationDelay: '0ms' }} />
-                          <span className="typing-dot" style={{ animationDelay: '150ms' }} />
-                          <span className="typing-dot" style={{ animationDelay: '300ms' }} />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Text bubble */}
-                    {textContent && (
-                      <div className="msg-assistant" style={{
-                        padding: 'var(--space-3) var(--space-4)',
-                        borderRadius: 'var(--radius-sm) var(--radius-lg) var(--radius-lg) var(--radius-lg)',
-                        background: 'var(--material-thin)',
-                        border: '1px solid var(--separator)',
-                        color: 'var(--text-primary)',
-                        fontSize: 'var(--text-subheadline)',
-                        lineHeight: 'var(--leading-relaxed)',
-                      }}>
-                        {formatMessage(textContent)}
-                        {/* Streaming cursor */}
-                        {isLastAssistant && textContent && (
-                          <span style={{
-                            display: 'inline-block',
-                            width: 2,
-                            height: '1.1em',
-                            background: 'var(--accent)',
-                            marginLeft: 2,
-                            animation: 'blink-cursor 1s step-end infinite',
-                            verticalAlign: 'text-bottom',
-                          }} />
-                        )}
-                      </div>
-                    )}
-
-                    {/* Media attachments */}
-                    {media.length > 0 && renderMedia(media, false)}
-                  </div>
-                </div>
-              )}
-            </div>
-          )
-        })}
+        {messages.map((msg, i) => (
+          <MessageBubble
+            key={msg.id || i}
+            msg={msg}
+            index={i}
+            messages={messages}
+            agent={agent}
+            isStreaming={isStreaming}
+          />
+        ))}
         <div ref={bottomRef} />
       </div>
 
@@ -993,60 +654,12 @@ export function ConversationView({ agent, conversation, onUpdate, onBack }: Conv
       }}>
         {/* Slash command autocomplete dropdown */}
         {slashMenuOpen && (
-          <div
-            className="animate-slide-down"
-            style={{
-              marginBottom: 'var(--space-2)',
-              background: 'var(--material-thick)',
-              border: '1px solid var(--separator)',
-              borderRadius: 'var(--radius-md)',
-              boxShadow: 'var(--shadow-overlay)',
-              backdropFilter: 'blur(20px)',
-              WebkitBackdropFilter: 'blur(20px)',
-              overflow: 'hidden',
-            }}
-          >
-            {slashMatches.map((cmd, i) => (
-              <button
-                key={cmd.name}
-                onMouseDown={e => {
-                  e.preventDefault() // prevent textarea blur
-                  handleSlashSelect(cmd)
-                }}
-                onMouseEnter={() => setSlashIndex(i)}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 'var(--space-3)',
-                  width: '100%',
-                  padding: 'var(--space-2) var(--space-3)',
-                  background: i === slashIndex ? 'var(--fill-secondary)' : 'transparent',
-                  border: 'none',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  color: 'var(--text-primary)',
-                  fontSize: 'var(--text-subheadline)',
-                  transition: 'background 100ms',
-                }}
-              >
-                <span style={{
-                  color: 'var(--accent)',
-                  fontWeight: 'var(--weight-semibold)',
-                  fontFamily: '"SF Mono", Menlo, monospace',
-                  fontSize: 'var(--text-footnote)',
-                  minWidth: 60,
-                }}>
-                  {cmd.name}
-                </span>
-                <span style={{
-                  color: 'var(--text-tertiary)',
-                  fontSize: 'var(--text-caption1)',
-                }}>
-                  {cmd.description}
-                </span>
-              </button>
-            ))}
-          </div>
+          <SlashCommandMenu
+            matches={slashMatches}
+            activeIndex={slashIndex}
+            onHover={setSlashIndex}
+            onSelect={handleSlashSelect}
+          />
         )}
 
         {/* Pending attachments preview */}
