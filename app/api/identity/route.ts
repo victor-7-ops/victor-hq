@@ -8,6 +8,7 @@ import { resolveHomePath } from '@/lib/utils';
 import fs from 'fs';
 import path from 'path';
 import { errorMessage } from '@/lib/api-error';
+import { redactJsonString, redactSecrets } from '@/lib/sanitize';
 
 export const dynamic = 'force-dynamic';
 
@@ -26,16 +27,16 @@ export async function GET() {
     // Read raw config for display
     let rawConfig = '';
     try {
-      rawConfig = fs.readFileSync(
+      rawConfig = redactJsonString(fs.readFileSync(
         path.join(resolveHomePath(dataDir), 'openclaw.json'),
         'utf-8'
-      );
+      ));
     } catch {}
 
     return NextResponse.json({
-      openclawConfig,
+      openclawConfig: redactSecrets(openclawConfig),
       gateway,
-      providers,
+      providers: redactSecrets(providers),
       configAudit,
       extensions,
       sandbox,

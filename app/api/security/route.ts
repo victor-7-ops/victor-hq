@@ -8,6 +8,7 @@ import os from 'os';
 import fs from 'fs';
 import path from 'path';
 import { errorMessage } from '@/lib/api-error';
+import { redactSecrets } from '@/lib/sanitize';
 
 export const dynamic = 'force-dynamic';
 
@@ -68,7 +69,7 @@ export async function GET() {
       tailscaleEndpoint,
       envExists,
       gatewayPort: openclawConfig.gateway?.port || parseInt(process.env.OPENCLAW_GATEWAY_PORT || '18789', 10),
-      securityPosture,
+      securityPosture: redactSecrets(securityPosture),
       _meta: {
         source: 'openclaw',
         computedAt: new Date().toISOString(),

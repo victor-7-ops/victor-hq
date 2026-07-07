@@ -168,6 +168,44 @@ export function renderMarkdown(
 }
 
 // ---------------------------------------------------------------------------
+// Credential redaction
+// ---------------------------------------------------------------------------
+
+const SECRET_KEY_RE = /token|key|secret|password|credential|auth/i;
+
+/**
+ * Deep-clone a JSON-shaped value, replacing string values whose key name
+ * looks credential-shaped with a masked placeholder. Used before returning
+ * config/data blobs to the client so raw tokens never leave the server.
+ */
+export function redactSecrets(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(redactSecrets);
+  }
+  if (value && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, val] of Object.entries(value as Record<string, unknown>)) {
+      if (typeof val === 'string' && SECRET_KEY_RE.test(key)) {
+        out[key] = val.length > 4 ? `****${val.slice(-4)}` : '****';
+      } else {
+        out[key] = redactSecrets(val);
+      }
+    }
+    return out;
+  }
+  return value;
+}
+
+/** Redact a raw JSON string (e.g. a config file's contents) before returning it. */
+export function redactJsonString(raw: string): string {
+  try {
+    return JSON.stringify(redactSecrets(JSON.parse(raw)), null, 2);
+  } catch {
+    return raw;
+  }
+}
+
+// ---------------------------------------------------------------------------
 // JSON colorizer (safe)
 // ---------------------------------------------------------------------------
 
