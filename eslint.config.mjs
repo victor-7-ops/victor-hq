@@ -10,6 +10,6 @@ export default [
     },
   },
   {
-    ignores: ["MetroCity/**", "reference/**", "artifacts/**", "data/**"],
+    ignores: ["MetroCity/**", "reference/**", "artifacts/**", "data/**", ".claude/worktrees/**", "tests/e2e/**"],
   },
 ];

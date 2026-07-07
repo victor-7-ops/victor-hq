@@ -5,6 +5,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./lib/__tests__/setup.ts'],
+    exclude: ['**/node_modules/**', 'tests/e2e/**', '.claude/worktrees/**'],
     coverage: {
       provider: 'v8',
       include: ['lib/**/*.ts'],
