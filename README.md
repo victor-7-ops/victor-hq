@@ -23,9 +23,39 @@ npm run dev
 
 Opens on `http://localhost:3333`. Needs a running OpenClaw gateway (`openclaw gateway start`) and, for the Agent Orchestrator page, the Agent Orchestrator desktop app running in the background.
 
+At startup, `instrumentation.ts` validates env vars (`lib/env.ts`) and logs any issues to the console — see the table below for what's required vs. optional.
+
+### Environment variables
+
+| Variable | Required? | What it does if missing |
+|---|---|---|
+| `OPENCLAW_HOME` | **Required** | Startup validation logs a clear error (server still boots, degraded). Path to your OpenClaw data directory, usually `~/.openclaw`. |
+| `WORKSPACE_PATH` | Optional | Pipeline editing (`POST /api/pipelines`) is disabled. |
+| `OPENCLAW_BIN` | Optional | Falls back to `openclaw` on `PATH`. |
+| `OPENCLAW_GATEWAY_TOKEN` | Optional | Falls back to `~/.openclaw/secrets/.env`; if still unset, chat/TTS/transcription are disabled. |
+| `OPENCLAW_GATEWAY_PORT` | Optional | Defaults to `18789`. |
+| `PROJECT_REPO_PATH` | Optional | Disables sprint/task parsing from a project repo. |
+| `GITHUB_PAT` | Optional | Disables GitHub integration. |
+| `COMPETITOR_PRODUCT_CONTEXT` | Optional | Falls back to a generic placeholder for competitor research prompts. |
+| `ELEVENLABS_API_KEY` | Optional | Disables text-to-speech for agents. |
+| `DATA_DIR` | Optional | Defaults to `~/.openclaw-dashboard` for the SQLite database. |
+| `PORT` | Optional | Defaults to `3333`. |
+
+See `.env.local.example` for the full annotated list.
+
+Tests: `npm test` (vitest, unit) and `npx playwright test` (e2e smoke flows in `tests/e2e/`).
+
+## Degraded-mode behavior
+
+Built to stay usable when its dependencies aren't running, rather than hang or crash:
+
+- **OpenClaw gateway offline** — chat, TTS, transcribe, and competitor-research routes time out after 5s and return a JSON error instead of hanging; the chat UI shows a clear failure message.
+- **Agent Orchestrator daemon offline** — `/agent-orchestrator` shows cached project/session data (dimmed, with a "not running — showing cached data" banner + Retry) instead of spinning forever; with no cache yet, it shows a clear "not running" state.
+- **`openclaw` CLI missing/slow** — model/session status calls run asynchronously (no more `execSync`) and are cached, so a slow or hanging CLI no longer freezes the dev server for other requests.
+- **Credentials in API responses** — config/posture data that could contain API keys or tokens is redacted (`lib/sanitize.ts`) before it reaches the client.
+
 ## Known rough edges
 
-- `openclaw models status` can be slow on this machine (expired-token check adds latency) — cached aggressively to stop it from freezing the dev server, but the underlying slowness isn't fixed
 - Windows-specific: shell redirects and env var handling were patched for PowerShell/cmd, might not match upstream behavior on Mac/Linux
 
 ## Not public-repo boilerplate
