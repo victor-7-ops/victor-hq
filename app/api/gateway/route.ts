@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic';
 export async function GET() {
   try {
     // Get live status from CLI
-    const cliStatus = getOpenClawStatus();
+    const cliStatus = await getOpenClawStatus();
     
     // Also get static parsed data for additional fields
     const config = getConfig();

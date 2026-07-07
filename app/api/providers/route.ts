@@ -14,7 +14,7 @@ export async function GET() {
       return NextResponse.json(cachedProbe.data);
     }
     
-    const probeResult = runProviderProbe();
+    const probeResult = await runProviderProbe();
     
     // Group by provider
     const byProvider: Record<string, {

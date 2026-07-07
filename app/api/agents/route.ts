@@ -39,11 +39,10 @@ function agentNameFromId(id: string): string {
 
 export async function GET() {
   try {
-    const modelsConfig = getOpenClawModels();
+    const [modelsConfig, cliSessions] = await Promise.all([getOpenClawModels(), getOpenClawSessions()]);
     const config = getConfig();
     const parsedAgents = parseAgentData(config.openclawDataDir);
     const dbMetrics = getAgentMetricsSummary();
-    const cliSessions = getOpenClawSessions();
     const aggregatedSessions = aggregateSessionsByAgent(cliSessions.sessions);
 
     const agentMap = new Map<string, AgentData>();

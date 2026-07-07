@@ -1,7 +1,9 @@
 // lib/parsers/openclaw-cli.ts
 
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 
+const execAsync = promisify(exec);
 const NULL_REDIRECT = process.platform === 'win32' ? '2>NUL' : '2>/dev/null';
 
 // ============================================
@@ -11,11 +13,11 @@ const NULL_REDIRECT = process.platform === 'win32' ? '2>NUL' : '2>/dev/null';
 
 const cache = new Map<string, { data: unknown; expires: number }>();
 
-function cached<T>(key: string, ttlMs: number, fn: () => T): T {
+async function cached<T>(key: string, ttlMs: number, fn: () => Promise<T>): Promise<T> {
   const now = Date.now();
   const entry = cache.get(key);
   if (entry && entry.expires > now) return entry.data as T;
-  const data = fn();
+  const data = await fn();
   cache.set(key, { data, expires: now + ttlMs });
   return data;
 }
@@ -83,18 +85,18 @@ export interface OpenClawModelsOutput {
   allowed: string[];
 }
 
-export function getOpenClawModels(): OpenClawModelsOutput {
+export function getOpenClawModels(): Promise<OpenClawModelsOutput> {
   // `openclaw models status` can take 30-40s on this machine (slow OAuth
-  // token check) and execSync blocks the whole Node event loop while it
-  // runs, so a long cache TTL matters far more here than for cheap calls.
-  return cached<OpenClawModelsOutput>('models', 10 * 60_000, () => {
+  // token check). Runs via async exec so it no longer blocks the Node event
+  // loop; a long cache TTL still matters far more here than for cheap calls.
+  return cached<OpenClawModelsOutput>('models', 10 * 60_000, async () => {
     try {
-      const output = execSync(`openclaw models status --json ${NULL_REDIRECT}`, {
+      const { stdout } = await execAsync(`openclaw models status --json ${NULL_REDIRECT}`, {
         encoding: 'utf-8',
         timeout: 45000,
       });
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const parsed = safeParseCliJson(output) as any;
+      const parsed = safeParseCliJson(stdout) as any;
       return {
         defaultModel: parsed.defaultModel || parsed.resolvedDefault || '',
         fallbacks: parsed.fallbacks || [],
@@ -139,14 +141,14 @@ export interface OpenClawSessionsOutput {
 /**
  * Execute openclaw sessions --all-agents --json and return parsed output
  */
-export function getOpenClawSessions(): OpenClawSessionsOutput {
-  return cached<OpenClawSessionsOutput>('sessions', 30_000, () => {
+export function getOpenClawSessions(): Promise<OpenClawSessionsOutput> {
+  return cached<OpenClawSessionsOutput>('sessions', 30_000, async () => {
     try {
-      const output = execSync(`openclaw sessions --all-agents --json ${NULL_REDIRECT}`, {
+      const { stdout } = await execAsync(`openclaw sessions --all-agents --json ${NULL_REDIRECT}`, {
         encoding: 'utf-8',
         timeout: 20000,
       });
-      return safeParseCliJson(output) as OpenClawSessionsOutput;
+      return safeParseCliJson(stdout) as OpenClawSessionsOutput;
     } catch (error) {
       console.error('[openclaw-cli] Failed to get sessions:', error);
       return {
@@ -335,13 +337,13 @@ function parseProbeResult(model: string, profile: string, statusCol: string, err
  * Run provider probe and return parsed results
  * Note: This takes ~10 seconds as it makes actual API calls
  */
-export function runProviderProbe(): ProviderProbeOutput {
+export async function runProviderProbe(): Promise<ProviderProbeOutput> {
   try {
-    const output = execSync('openclaw models status --probe 2>&1', {
+    const { stdout } = await execAsync('openclaw models status --probe 2>&1', {
       encoding: 'utf-8',
       timeout: 30000, // 30 second timeout
     });
-    return parseProbeOutput(output);
+    return parseProbeOutput(stdout);
   } catch (error) {
     console.error('[openclaw-cli] Failed to run probe:', error);
     return { results: [], probeTime: Date.now(), totalProbed: 0 };
@@ -370,14 +372,14 @@ export interface OpenClawStatusOutput {
   agents: { defaultId: string };
 }
 
-export function getOpenClawStatus(): OpenClawStatusOutput {
-  return cached<OpenClawStatusOutput>('status', 30_000, () => {
+export function getOpenClawStatus(): Promise<OpenClawStatusOutput> {
+  return cached<OpenClawStatusOutput>('status', 30_000, async () => {
     try {
-      const output = execSync('openclaw status --json 2>&1', {
+      const { stdout } = await execAsync('openclaw status --json 2>&1', {
         encoding: 'utf-8',
         timeout: 20000,
       });
-      const parsed = JSON.parse(output);
+      const parsed = JSON.parse(stdout);
 
       // Extract gateway info
       const gateway = parsed.gateway || {};

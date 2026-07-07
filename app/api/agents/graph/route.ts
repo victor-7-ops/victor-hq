@@ -32,10 +32,10 @@ export async function GET() {
   try {
     const config = getConfig();
     const parsedAgents = parseAgentData(config.openclawDataDir);
-    const modelsConfig = getOpenClawModels();
+    const modelsConfig = await getOpenClawModels();
 
     // CLI sessions for live status + interaction edges
-    let cliSessions: ReturnType<typeof getOpenClawSessions> = {
+    let cliSessions: Awaited<ReturnType<typeof getOpenClawSessions>> = {
       path: null,
       stores: [],
       allAgents: true,
@@ -44,7 +44,7 @@ export async function GET() {
       sessions: [],
     };
     try {
-      cliSessions = getOpenClawSessions();
+      cliSessions = await getOpenClawSessions();
     } catch {
       // CLI not available — will use parsed data only
     }
