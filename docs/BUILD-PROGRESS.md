@@ -7,7 +7,7 @@ Loop reads this first, updates it last. Only tick a box after the step's accepta
 - [x] Step 1 — Shared agents API client (lib/api/agents-client.ts, refactor 12 consumers)
 - [x] Step 2 — Windows-compatible system metrics (/api/system win32 branches)
 - [x] Step 3 — Decompose app/security/page.tsx (2,332 lines → components)
-- [ ] Step 4 — Split lib/parsers/openclaw-logs.ts (domain modules + re-export barrel)
+- [x] Step 4 — Split lib/parsers/openclaw-logs.ts (domain modules + re-export barrel)
 - [ ] Step 5 — Unify server state on react-query (conversations first)
 - [ ] Step 6 — UX resilience polish (ErrorState retry, avatar fallback, logo 404)
 - [ ] Step 7 — Broaden e2e suite (5 → 10+ tests)
