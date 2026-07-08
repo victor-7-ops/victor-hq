@@ -20,13 +20,15 @@ export function useAgentWork({ tickets, onUpdateTicket }: UseAgentWorkOptions) {
   // Clean up on unmount: abort all in-flight work
   useEffect(() => {
     unmounted.current = false
+    const controllers = abortControllers.current
+    const work = activeWork.current
     return () => {
       unmounted.current = true
-      for (const [, controller] of abortControllers.current) {
+      for (const [, controller] of controllers) {
         controller.abort()
       }
-      abortControllers.current.clear()
-      activeWork.current.clear()
+      controllers.clear()
+      work.clear()
     }
   }, [])
 

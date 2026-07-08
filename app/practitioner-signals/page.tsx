@@ -59,7 +59,7 @@ export default function PractitionerSignalsPage() {
     refetchInterval: 60000,
   });
 
-  const signals = data?.signals ?? [];
+  const signals = useMemo(() => data?.signals ?? [], [data]);
   const types = data?.types ?? [];
 
   const filtered = useMemo(() => {

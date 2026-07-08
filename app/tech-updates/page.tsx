@@ -68,7 +68,7 @@ export default function TechUpdatesPage() {
     refetchInterval: 60000,
   });
 
-  const updates = data?.updates ?? [];
+  const updates = useMemo(() => data?.updates ?? [], [data]);
   const categories = data?.categories ?? [];
 
   const freshSignals = useMemo(() => {

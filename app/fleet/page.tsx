@@ -40,7 +40,7 @@ export default function FleetPage() {
   const { selectedAgentId, setSelectedAgent } = useDashboardStore();
   const [activeTab, setActiveTab] = useState<ViewTab>('organism');
 
-  const agents = agentData?.agents ?? [];
+  const agents = useMemo(() => agentData?.agents ?? [], [agentData]);
 
   const selectedAgent = useMemo(
     () => agents.find((a) => a.id === selectedAgentId) ?? null,

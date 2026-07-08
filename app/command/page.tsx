@@ -63,8 +63,8 @@ export default function CommandPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [typeFilter, setTypeFilter] = useState<TypeFilter>('all');
 
-  const sprints = sprintData?.sprints ?? [];
-  const allTasks = taskData?.tasks ?? [];
+  const sprints = useMemo(() => sprintData?.sprints ?? [], [sprintData]);
+  const allTasks = useMemo(() => taskData?.tasks ?? [], [taskData]);
 
   // Find the active sprint
   const activeSprint = useMemo(

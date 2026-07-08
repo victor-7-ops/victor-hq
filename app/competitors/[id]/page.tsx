@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import Link from 'next/link';
 import {
   ArrowLeft, ExternalLink, Globe, Loader2, Trash2,
@@ -68,7 +68,7 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ id:
   const [fetchingUpdates, setFetchingUpdates] = useState(false);
   const [fetchingFeedback, setFetchingFeedback] = useState(false);
 
-  function loadCompetitor() {
+  const loadCompetitor = useCallback(() => {
     setError(null);
     setLoading(true);
     fetch(`/api/competitors/${id}`)
@@ -89,9 +89,9 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ id:
         setError(e.message || 'Failed to load competitor');
         setLoading(false);
       });
-  }
+  }, [id]);
 
-  useEffect(() => { loadCompetitor(); }, [id]);
+  useEffect(() => { loadCompetitor(); }, [loadCompetitor]);
 
   function parseJSON<T>(json: string | null, fallback: T): T {
     if (!json) return fallback;

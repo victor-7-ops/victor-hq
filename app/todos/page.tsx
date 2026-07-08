@@ -456,7 +456,7 @@ export default function TaskManagerPage() {
     queryFn: () => fetch('/api/todos').then((r) => r.json()),
     refetchInterval: 15000,
   });
-  const todos = data?.todos ?? [];
+  const todos = useMemo(() => data?.todos ?? [], [data]);
 
   // -- UI state
   const [statusFilter, setStatusFilter] = useState<FilterStatus>('all');

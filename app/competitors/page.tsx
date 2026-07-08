@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import {
   Plus, Globe, Loader2, Search, Sparkles, X, ExternalLink,
@@ -392,7 +392,7 @@ export default function CompetitorsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  function loadCompetitors() {
+  const loadCompetitors = useCallback(() => {
     setError(null);
     setLoading(true);
     fetch(`/api/competitors?projectId=${activeProjectId}`)
@@ -408,9 +408,9 @@ export default function CompetitorsPage() {
         setError(e.message || 'Failed to load competitors');
         setLoading(false);
       });
-  }
+  }, [activeProjectId]);
 
-  useEffect(() => { loadCompetitors(); }, [activeProjectId]);
+  useEffect(() => { loadCompetitors(); }, [loadCompetitors]);
 
   const categories = useMemo(() =>
     Array.from(new Set(competitors.map(c => c.category))).sort(),

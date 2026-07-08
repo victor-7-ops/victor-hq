@@ -1014,7 +1014,7 @@ export const OrganismCanvas = memo(function OrganismCanvas({
       cancelAnimationFrame(frameRef.current);
       document.removeEventListener('visibilitychange', handleVisibility);
     };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- selectedAgentId read via ref
+  }, []);  
 
   // Mouse interaction
   const handleMouseMove = useCallback(

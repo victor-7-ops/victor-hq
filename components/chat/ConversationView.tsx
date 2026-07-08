@@ -134,7 +134,7 @@ export function ConversationView({ agent, conversation, onUpdate, onBack }: Conv
   const fileInputRef = useRef<HTMLInputElement>(null)
   const messagesAreaRef = useRef<HTMLDivElement>(null)
 
-  const messages = conversation?.messages || []
+  const messages = useMemo(() => conversation?.messages || [], [conversation])
   const messagesRef = useRef(messages)
   messagesRef.current = messages
 
@@ -240,7 +240,7 @@ export function ConversationView({ agent, conversation, onUpdate, onBack }: Conv
       setIsStreaming(false)
       textareaRef.current?.focus()
     }
-  }, [input, pendingAttachments, isStreaming, agent.id, onUpdate])
+  }, [input, pendingAttachments, isStreaming, agent.id, onUpdate, settings.operatorName])
 
   function runSlashCommand(command: string) {
     const result = executeCommand(command, agent)

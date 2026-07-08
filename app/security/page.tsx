@@ -595,9 +595,9 @@ export default function SystemPulsePage() {
   const agents = agentData?.agents ?? [];
   const activeAgents = agents.filter((a) => a.status === 'online' || a.status === 'idle').length;
   const gatewayOnline = gateway?.pid !== null && gateway?.pid !== undefined;
-  const alerts = securityData?.alerts ?? [];
+  const alerts = useMemo(() => securityData?.alerts ?? [], [securityData]);
   const anomalies = costData?.anomalies ?? [];
-  const providers = identity?.providers ?? [];
+  const providers = useMemo(() => identity?.providers ?? [], [identity]);
   const compactionLog = identity?.compactionLog ?? [];
   const securityPosture = securityData?.securityPosture;
 

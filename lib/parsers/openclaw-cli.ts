@@ -95,7 +95,7 @@ export function getOpenClawModels(): Promise<OpenClawModelsOutput> {
         encoding: 'utf-8',
         timeout: 45000,
       });
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       
       const parsed = safeParseCliJson(stdout) as any;
       return {
         defaultModel: parsed.defaultModel || parsed.resolvedDefault || '',
