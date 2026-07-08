@@ -20,4 +20,21 @@ test.describe('Kanban board', () => {
 
     await expect(page.getByText(title)).toBeVisible();
   });
+
+  test('deletes a ticket after confirming', async ({ page }) => {
+    page.on('dialog', (dialog) => dialog.accept());
+
+    await page.goto('/kanban');
+    await page.getByRole('button', { name: 'New Ticket' }).click();
+
+    const title = `E2E delete-me ${Date.now()}`;
+    await page.getByPlaceholder('What needs to be done?').fill(title);
+    await page.getByRole('button', { name: 'Create Ticket' }).click();
+    await expect(page.getByText(title)).toBeVisible();
+
+    await page.getByText(title).click();
+    await page.getByRole('button', { name: 'Delete Ticket' }).click();
+
+    await expect(page.getByText(title)).not.toBeVisible();
+  });
 });
