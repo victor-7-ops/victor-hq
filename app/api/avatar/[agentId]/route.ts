@@ -14,6 +14,35 @@ const MIME_TYPES: Record<string, string> = {
   '.svg': 'image/svg+xml',
 }
 
+const FALLBACK_COLORS = ['#6366f1', '#ec4899', '#14b8a6', '#f59e0b', '#8b5cf6', '#22c55e', '#ef4444', '#0ea5e9']
+
+/** Generate a deterministic initials-avatar SVG for agents with no avatar file. */
+function fallbackAvatarSvg(agentId: string): NextResponse {
+  const initials = agentId
+    .split(/[-_\s]+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || '')
+    .join('') || '?'
+
+  let hash = 0
+  for (let i = 0; i < agentId.length; i++) hash = (hash * 31 + agentId.charCodeAt(i)) >>> 0
+  const color = FALLBACK_COLORS[hash % FALLBACK_COLORS.length]
+
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+    <rect width="128" height="128" rx="24" fill="${color}"/>
+    <text x="64" y="64" font-family="system-ui, sans-serif" font-size="52" font-weight="600" fill="#fff" text-anchor="middle" dominant-baseline="central">${initials}</text>
+  </svg>`
+
+  return new NextResponse(svg, {
+    status: 200,
+    headers: {
+      'Content-Type': 'image/svg+xml',
+      'Cache-Control': 'public, max-age=300',
+    },
+  })
+}
+
 /**
  * GET /api/avatar/[agentId]
  *
@@ -65,23 +94,23 @@ export async function GET(
   }
 
   if (!agentWorkspace) {
-    return NextResponse.json({ error: 'Agent not found' }, { status: 404 })
+    return fallbackAvatarSvg(agentId)
   }
 
   // Read IDENTITY.md to get avatar filename
   const wsIdentity = safeRead(join(agentWorkspace, 'IDENTITY.md'))
   if (!wsIdentity) {
-    return NextResponse.json({ error: 'No identity file' }, { status: 404 })
+    return fallbackAvatarSvg(agentId)
   }
 
   const parsed = parseIdentity(wsIdentity)
   if (!parsed.avatar) {
-    return NextResponse.json({ error: 'No avatar configured' }, { status: 404 })
+    return fallbackAvatarSvg(agentId)
   }
 
   const avatarPath = join(agentWorkspace, parsed.avatar)
   if (!existsSync(avatarPath)) {
-    return NextResponse.json({ error: 'Avatar file not found' }, { status: 404 })
+    return fallbackAvatarSvg(agentId)
   }
 
   // Security: ensure the resolved path is within the workspace

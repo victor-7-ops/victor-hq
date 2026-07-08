@@ -109,7 +109,7 @@ export function MobileSidebar({
             />
           ) : (
             <img
-              src="/logo.png"
+              src="/ocd-logo.png"
               alt=""
               style={{
                 width: '48px',
@@ -191,7 +191,7 @@ export function MobileSidebar({
               />
             ) : (
               <img
-                src="/logo.png"
+                src="/ocd-logo.png"
                 alt=""
                 style={{
                   width: '72px',

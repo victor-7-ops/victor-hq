@@ -9,7 +9,7 @@ Loop reads this first, updates it last. Only tick a box after the step's accepta
 - [x] Step 3 — Decompose app/security/page.tsx (2,332 lines → components)
 - [x] Step 4 — Split lib/parsers/openclaw-logs.ts (domain modules + re-export barrel)
 - [x] Step 5 — Unify server state on react-query (conversations first)
-- [ ] Step 6 — UX resilience polish (ErrorState retry, avatar fallback, logo 404)
+- [x] Step 6 — UX resilience polish (ErrorState retry, avatar fallback, logo 404)
 - [ ] Step 7 — Broaden e2e suite (5 → 10+ tests)
 - [ ] Step 8 — Cold-start latency (warm CLI caches in instrumentation.ts)
 
