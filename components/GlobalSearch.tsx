@@ -13,6 +13,7 @@ import {
   Settings,
 } from 'lucide-react';
 import type { Agent, CronJob } from '@/lib/types';
+import { fetchAgents } from '@/lib/api/agents-client';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -150,15 +151,8 @@ export function GlobalSearch() {
     setQuery('');
     setActiveIndex(0);
     // Fetch agents
-    fetch('/api/agents')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: unknown) => {
-        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents;
-        if (Array.isArray(list)) setAgents(list as Agent[]);
-      })
+    fetchAgents()
+      .then(setAgents)
       .catch(() => setAgents([]));
     // Fetch crons
     fetch('/api/crons')

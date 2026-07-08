@@ -20,6 +20,7 @@ import { TicketDetailPanel } from '@/components/kanban/TicketDetailPanel'
 import { AgentAvatar } from '@/components/AgentAvatar'
 import { ErrorState } from '@/components/ErrorState'
 import { Skeleton } from '@/components/ui/skeleton'
+import { fetchAgents } from '@/lib/api/agents-client'
 
 export default function KanbanPage() {
   const [tickets, setTickets] = useState<KanbanStore>({})
@@ -39,12 +40,8 @@ export default function KanbanPage() {
     setTickets(stored)
 
     // Load agents from API
-    fetch('/api/agents')
-      .then((r) => {
-        if (!r.ok) throw new Error('Failed to fetch agents')
-        return r.json()
-      })
-      .then((a: { agents?: Agent[] } | Agent[]) => setAgents(Array.isArray(a) ? a : a.agents ?? []))
+    fetchAgents()
+      .then(setAgents)
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false))
   }, [])

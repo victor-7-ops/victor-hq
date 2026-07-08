@@ -10,6 +10,7 @@ import {
   markRead, type ConversationStore, type Message,
   fetchConversation, syncToServer, fromStoredMessage,
 } from '@/lib/conversations'
+import { fetchAgents } from '@/lib/api/agents-client'
 
 function MessengerApp() {
   const router = useRouter()
@@ -25,13 +26,9 @@ function MessengerApp() {
   function loadAgents() {
     setError(null)
     setLoading(true)
-    fetch('/api/agents')
-      .then(r => {
-        if (!r.ok) throw new Error('Failed to load agents')
-        return r.json()
-      })
-      .then((data: { agents?: Agent[] } | Agent[]) => {
-        setAgents(Array.isArray(data) ? data : data.agents ?? [])
+    fetchAgents()
+      .then((data) => {
+        setAgents(data)
         setLoading(false)
       })
       .catch((e) => {

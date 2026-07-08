@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { Agent, CronJob, CronRun } from "@/lib/types";
 import type { Pipeline } from "@/lib/cron-pipelines";
 import { formatDuration, timeAgo, nextRunLabel } from "@/lib/cron-utils";
+import { fetchAgents } from "@/lib/api/agents-client";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, BarChart3, Calendar, GitBranch, Copy, Check } from "lucide-react";
 import { ErrorState } from "@/components/ErrorState";
@@ -415,10 +416,7 @@ export default function CronsPage() {
         if (!r.ok) throw new Error("Failed to load crons");
         return r.json();
       }),
-      fetch("/api/agents").then((r) => {
-        if (!r.ok) throw new Error("Failed to load agents");
-        return r.json();
-      }),
+      fetchAgents(),
     ])
       .then(([cronData, a]) => {
         // Backward compat: if response is a plain array, treat as crons-only
@@ -429,7 +427,7 @@ export default function CronsPage() {
           setCrons(cronData.crons);
           setPipelines(cronData.pipelines || []);
         }
-        setAgents(Array.isArray(a) ? a : a?.agents ?? []);
+        setAgents(a);
         setLastRefresh(new Date());
         setLoading(false);
         setRefreshing(false);

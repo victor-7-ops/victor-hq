@@ -6,6 +6,7 @@ import type { Agent } from '@/lib/types'
 import { useSettings } from '@/app/settings-provider'
 import { AgentAvatar } from '@/components/AgentAvatar'
 import { OnboardingWizard } from '@/components/OnboardingWizard'
+import { fetchAgents } from '@/lib/api/agents-client'
 import { deleteOnServer } from '@/lib/conversations'
 
 // ---------------------------------------------------------------------------
@@ -97,15 +98,8 @@ export default function SettingsPage() {
 
   // Fetch agents
   useEffect(() => {
-    fetch('/api/agents')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then((data: unknown) => {
-        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents
-        if (Array.isArray(list)) setAgents(list as Agent[])
-      })
+    fetchAgents()
+      .then(setAgents)
       .catch(() => setAgents([]))
   }, [])
 

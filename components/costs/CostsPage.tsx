@@ -8,6 +8,7 @@ import { generateId } from '@/lib/id'
 import { buildCostAnalysisPrompt } from '@/lib/costs'
 import { renderMarkdown } from '@/lib/sanitize'
 import { fmtCost, fmtTokens } from './formatters'
+import { fetchAgents } from '@/lib/api/agents-client'
 import { SummaryCard } from './SummaryCard'
 import { DailyCostChart } from './DailyCostChart'
 import { TokenDonut } from './TokenDonut'
@@ -67,14 +68,11 @@ export function CostsPage() {
         if (!r.ok) throw new Error('Failed to load crons')
         return r.json()
       }),
-      fetch('/api/agents').then(r => {
-        if (!r.ok) throw new Error('Failed to load agents')
-        return r.json()
-      }),
+      fetchAgents(),
     ])
-      .then(([costData, cronData, agentData]: [CostSummary & { jobNames?: Record<string, string> }, { crons: CronJob[] }, { agents?: Agent[] } | Agent[]]) => {
+      .then(([costData, cronData, agents]: [CostSummary & { jobNames?: Record<string, string> }, { crons: CronJob[] }, Agent[]]) => {
         setData(costData)
-        setAgents(Array.isArray(agentData) ? agentData : agentData.agents ?? [])
+        setAgents(agents)
         // Merge server-side job names (includes deleted jobs) with active cron names
         const names: Record<string, string> = { ...(costData.jobNames ?? {}) }
         const agentMap: Record<string, string> = {}

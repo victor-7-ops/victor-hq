@@ -12,6 +12,7 @@ import { GridView } from "@/components/GridView"
 import { FeedView } from "@/components/FeedView"
 import { ConstellationView } from "@/components/ConstellationView"
 import { TOOL_ICONS } from "@/lib/tool-icons"
+import { fetchAgents } from "@/lib/api/agents-client"
 
 const OrgMap = dynamic(
   () => import("@/components/OrgMap").then((m) => ({ default: m.OrgMap })),
@@ -120,28 +121,13 @@ export default function HomePage() {
     setLoading(true)
     setError(null)
     Promise.all([
-      fetch("/api/agents").then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch agents")
-        return r.json()
-      }),
+      fetchAgents(),
       fetch("/api/crons").then((r) => {
         if (!r.ok) throw new Error("Failed to fetch crons")
         return r.json()
       }),
     ])
-      .then(([a, cronData]) => {
-        // /api/agents returns parentId-shaped items; OrgMap and the detail panel
-        // need reportsTo/directReports, so synthesize them when absent.
-        const raw: Agent[] = Array.isArray(a) ? a : a.agents ?? []
-        const normalized = raw.map((ag) => ({
-          ...ag,
-          reportsTo: ag.reportsTo ?? (ag as { parentId?: string | null }).parentId ?? null,
-          directReports:
-            ag.directReports ??
-            raw
-              .filter((c) => (c.reportsTo ?? (c as { parentId?: string | null }).parentId) === ag.id)
-              .map((c) => c.id),
-        }))
+      .then(([normalized, cronData]) => {
         setAgents(normalized)
         setCrons(Array.isArray(cronData) ? cronData : cronData.crons ?? [])
       })

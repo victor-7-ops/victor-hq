@@ -11,6 +11,7 @@ import {
 } from 'lucide-react'
 import { useSettings } from '@/app/settings-provider'
 import { fetchOnboarded, syncOnboarded } from '@/lib/conversations'
+import { fetchAgents } from '@/lib/api/agents-client'
 
 // ---------------------------------------------------------------------------
 // Accent color presets
@@ -228,19 +229,14 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
   const discoverAgents = useCallback(() => {
     setAgentsStatus('loading')
     setAgentsError(null)
-    fetch('/api/agents')
-      .then(r => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`)
-        return r.json()
-      })
-      .then((data: unknown) => {
-        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents ?? []
-        if (Array.isArray(list) && list.length > 0) {
-          setAgents(list.map((a: Record<string, unknown>) => ({
-            id: String(a.id ?? ''),
-            name: String(a.name ?? ''),
-            emoji: String(a.emoji ?? ''),
-            title: String(a.title ?? ''),
+    fetchAgents()
+      .then((list) => {
+        if (list.length > 0) {
+          setAgents(list.map((a) => ({
+            id: a.id,
+            name: a.name,
+            emoji: a.emoji,
+            title: a.title,
           })))
           setAgentsStatus('ok')
         } else {

@@ -4,7 +4,7 @@ Loop reads this first, updates it last. Only tick a box after the step's accepta
 
 ## Round 2 (active — spec: docs/BUILD-PLAN-2.md)
 
-- [ ] Step 1 — Shared agents API client (lib/api/agents-client.ts, refactor 12 consumers)
+- [x] Step 1 — Shared agents API client (lib/api/agents-client.ts, refactor 12 consumers)
 - [ ] Step 2 — Windows-compatible system metrics (/api/system win32 branches)
 - [ ] Step 3 — Decompose app/security/page.tsx (2,332 lines → components)
 - [ ] Step 4 — Split lib/parsers/openclaw-logs.ts (domain modules + re-export barrel)

@@ -11,6 +11,7 @@ import {
   GitBranch, Terminal,
 } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import { fetchAgents } from '@/lib/api/agents-client';
 import type { CronJob } from '@/lib/types';
 import { useSettings } from '@/app/settings-provider';
 import { useDashboardStore } from '@/store/dashboard';
@@ -528,15 +529,8 @@ export function NavLinks({ bottomSlot, collapsed }: { bottomSlot?: React.ReactNo
 
   // Fetch agent count
   useEffect(() => {
-    fetch('/api/agents')
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((data: unknown) => {
-        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents;
-        if (Array.isArray(list)) setAgentCount(list.length);
-      })
+    fetchAgents()
+      .then((list) => setAgentCount(list.length))
       .catch(() => setAgentCount(null));
   }, []);
 

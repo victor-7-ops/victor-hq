@@ -7,6 +7,7 @@ import type { Agent, CronJob } from "@/lib/types"
 import { Skeleton } from "@/components/ui/skeleton"
 import { ErrorState } from "@/components/ErrorState"
 import { AgentAvatar } from "@/components/AgentAvatar"
+import { fetchAgents } from "@/lib/api/agents-client"
 import { useSettings } from "@/app/settings-provider"
 import { TOOL_ICONS } from "@/lib/tool-icons"
 import type { AOProject, AOSession } from "@/lib/agent-orchestrator"
@@ -351,17 +352,13 @@ export default function AgentDetailPage({
     setLoading(true)
     setError(null)
     Promise.all([
-      fetch("/api/agents").then((r) => {
-        if (!r.ok) throw new Error("Failed to fetch agents")
-        return r.json()
-      }),
+      fetchAgents(),
       fetch("/api/crons").then((r) => {
         if (!r.ok) throw new Error("Failed to fetch crons")
         return r.json()
       }),
     ])
-      .then(([agentsData, cronData]) => {
-        const agents: Agent[] = Array.isArray(agentsData) ? agentsData : agentsData.agents ?? []
+      .then(([agents, cronData]) => {
         const cronList: CronJob[] = Array.isArray(cronData) ? cronData : cronData.crons ?? []
         setAllAgents(agents)
         setAgent(agents.find((a: Agent) => a.id === id) || null)

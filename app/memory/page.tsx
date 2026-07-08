@@ -29,6 +29,7 @@ import { formatBytes, wordCount, isJsonFile } from "./components/helpers";
 import { GuideTab } from "./components/GuideTab";
 import { OverviewTab } from "./components/OverviewTab";
 import { BrowserTab } from "./components/BrowserTab";
+import { fetchAgents } from "@/lib/api/agents-client";
 
 /* ─── Types ──────────────────────────────────────────────────── */
 
@@ -147,9 +148,8 @@ export default function MemoryPage() {
 
   // Fetch agents for AI advisor
   useEffect(() => {
-    fetch("/api/agents")
-      .then((r) => r.json())
-      .then((d) => setAgents(Array.isArray(d) ? d : d?.agents ?? []))
+    fetchAgents()
+      .then(setAgents)
       .catch(() => {});
   }, []);
 
