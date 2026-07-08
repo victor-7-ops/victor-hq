@@ -552,7 +552,7 @@ export default function MemoryPage() {
       setSelected(updated);
       setEditingContent(null);
       // Show reindex button if vector search is enabled
-      if (config?.memorySearch.enabled) {
+      if (config?.memorySearch?.enabled) {
         setShowReindex(true);
         setReindexStatus("idle");
       }

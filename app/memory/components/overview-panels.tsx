@@ -275,7 +275,29 @@ export function MemoryTimeline({ timeline }: { timeline: MemoryStats["dailyTimel
 /* ─── Overview: Config Panel ─────────────────────────────────── */
 
 export function ConfigPanel({ config }: { config: MemoryConfig }) {
-  const { memorySearch: ms, memoryFlush: mf, configFound } = config;
+  const { memorySearch, memoryFlush, configFound } = config;
+  const ms = {
+    enabled: memorySearch?.enabled ?? false,
+    provider: memorySearch?.provider,
+    model: memorySearch?.model,
+    hybrid: {
+      enabled: memorySearch?.hybrid?.enabled ?? false,
+      vectorWeight: memorySearch?.hybrid?.vectorWeight ?? 0.5,
+      textWeight: memorySearch?.hybrid?.textWeight ?? 0.5,
+      temporalDecay: {
+        enabled: memorySearch?.hybrid?.temporalDecay?.enabled ?? false,
+        halfLifeDays: memorySearch?.hybrid?.temporalDecay?.halfLifeDays ?? 30,
+      },
+      mmr: {
+        enabled: memorySearch?.hybrid?.mmr?.enabled ?? false,
+        lambda: memorySearch?.hybrid?.mmr?.lambda ?? 0.5,
+      },
+    },
+  };
+  const mf = {
+    enabled: memoryFlush?.enabled ?? false,
+    softThresholdTokens: memoryFlush?.softThresholdTokens ?? 0,
+  };
   return (
     <div
       style={{

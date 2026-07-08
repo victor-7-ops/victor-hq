@@ -5,9 +5,9 @@ import type { MemoryConfig } from "@/lib/types";
 /* ─── Guide: Decay Visualizer ────────────────────────────────── */
 
 export function DecayVisualizer({ config }: { config: MemoryConfig }) {
-  const decay = config.memorySearch.hybrid.temporalDecay;
-  const halfLife = decay.halfLifeDays;
-  const enabled = decay.enabled;
+  const decay = config.memorySearch?.hybrid?.temporalDecay;
+  const halfLife = decay?.halfLifeDays ?? 30;
+  const enabled = decay?.enabled ?? false;
   const chartW = 360;
   const chartH = 120;
   const padX = 40;
@@ -157,8 +157,10 @@ export function DecayVisualizer({ config }: { config: MemoryConfig }) {
 /* ─── Guide: Hybrid Balance Bar ──────────────────────────────── */
 
 export function HybridBalanceBar({ config }: { config: MemoryConfig }) {
-  const { vectorWeight, textWeight } = config.memorySearch.hybrid;
-  const enabled = config.memorySearch.hybrid.enabled;
+  const hybrid = config.memorySearch?.hybrid;
+  const vectorWeight = hybrid?.vectorWeight ?? 0.5;
+  const textWeight = hybrid?.textWeight ?? 0.5;
+  const enabled = hybrid?.enabled ?? false;
   const vPct = vectorWeight * 100;
   const tPct = textWeight * 100;
 
