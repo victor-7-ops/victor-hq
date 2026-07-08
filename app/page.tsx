@@ -130,7 +130,19 @@ export default function HomePage() {
       }),
     ])
       .then(([a, cronData]) => {
-        setAgents(Array.isArray(a) ? a : a.agents ?? [])
+        // /api/agents returns parentId-shaped items; OrgMap and the detail panel
+        // need reportsTo/directReports, so synthesize them when absent.
+        const raw: Agent[] = Array.isArray(a) ? a : a.agents ?? []
+        const normalized = raw.map((ag) => ({
+          ...ag,
+          reportsTo: ag.reportsTo ?? (ag as { parentId?: string | null }).parentId ?? null,
+          directReports:
+            ag.directReports ??
+            raw
+              .filter((c) => (c.reportsTo ?? (c as { parentId?: string | null }).parentId) === ag.id)
+              .map((c) => c.id),
+        }))
+        setAgents(normalized)
         setCrons(Array.isArray(cronData) ? cronData : cronData.crons ?? [])
       })
       .catch((e) => setError(e.message))

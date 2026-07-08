@@ -234,8 +234,9 @@ export function OnboardingWizard({ forceOpen, onClose }: OnboardingWizardProps) 
         return r.json()
       })
       .then((data: unknown) => {
-        if (Array.isArray(data) && data.length > 0) {
-          setAgents(data.map((a: Record<string, unknown>) => ({
+        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents ?? []
+        if (Array.isArray(list) && list.length > 0) {
+          setAgents(list.map((a: Record<string, unknown>) => ({
             id: String(a.id ?? ''),
             name: String(a.name ?? ''),
             emoji: String(a.emoji ?? ''),

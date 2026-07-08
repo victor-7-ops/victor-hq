@@ -30,8 +30,8 @@ function MessengerApp() {
         if (!r.ok) throw new Error('Failed to load agents')
         return r.json()
       })
-      .then((data: Agent[]) => {
-        setAgents(data)
+      .then((data: { agents?: Agent[] } | Agent[]) => {
+        setAgents(Array.isArray(data) ? data : data.agents ?? [])
         setLoading(false)
       })
       .catch((e) => {

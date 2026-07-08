@@ -360,7 +360,8 @@ export default function AgentDetailPage({
         return r.json()
       }),
     ])
-      .then(([agents, cronData]) => {
+      .then(([agentsData, cronData]) => {
+        const agents: Agent[] = Array.isArray(agentsData) ? agentsData : agentsData.agents ?? []
         const cronList: CronJob[] = Array.isArray(cronData) ? cronData : cronData.crons ?? []
         setAllAgents(agents)
         setAgent(agents.find((a: Agent) => a.id === id) || null)

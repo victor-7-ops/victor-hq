@@ -72,9 +72,9 @@ export function CostsPage() {
         return r.json()
       }),
     ])
-      .then(([costData, cronData, agentData]: [CostSummary & { jobNames?: Record<string, string> }, { crons: CronJob[] }, Agent[]]) => {
+      .then(([costData, cronData, agentData]: [CostSummary & { jobNames?: Record<string, string> }, { crons: CronJob[] }, { agents?: Agent[] } | Agent[]]) => {
         setData(costData)
-        setAgents(agentData)
+        setAgents(Array.isArray(agentData) ? agentData : agentData.agents ?? [])
         // Merge server-side job names (includes deleted jobs) with active cron names
         const names: Record<string, string> = { ...(costData.jobNames ?? {}) }
         const agentMap: Record<string, string> = {}
@@ -140,12 +140,12 @@ export function CostsPage() {
   }, [data, selectedAgents, jobAgentMap])
 
   // Date range from run costs
-  const dateRange = filteredData && filteredData.runCosts.length > 0
+  const dateRange = useMemo(() => filteredData && filteredData.runCosts.length > 0
     ? {
         oldest: new Date(Math.min(...filteredData.runCosts.map(r => r.ts))),
         newest: new Date(Math.max(...filteredData.runCosts.map(r => r.ts))),
       }
-    : null
+    : null, [filteredData])
 
   // Estimated cost for selected period
   const periodCost = useMemo(() => {

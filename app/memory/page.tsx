@@ -149,7 +149,7 @@ export default function MemoryPage() {
   useEffect(() => {
     fetch("/api/agents")
       .then((r) => r.json())
-      .then(setAgents)
+      .then((d) => setAgents(Array.isArray(d) ? d : d?.agents ?? []))
       .catch(() => {});
   }, []);
 

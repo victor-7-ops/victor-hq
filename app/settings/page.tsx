@@ -103,7 +103,8 @@ export default function SettingsPage() {
         return r.json()
       })
       .then((data: unknown) => {
-        if (Array.isArray(data)) setAgents(data as Agent[])
+        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents
+        if (Array.isArray(list)) setAgents(list as Agent[])
       })
       .catch(() => setAgents([]))
   }, [])

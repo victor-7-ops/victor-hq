@@ -534,7 +534,8 @@ export function NavLinks({ bottomSlot, collapsed }: { bottomSlot?: React.ReactNo
         return r.json();
       })
       .then((data: unknown) => {
-        if (Array.isArray(data)) setAgentCount(data.length);
+        const list = Array.isArray(data) ? data : (data as { agents?: unknown[] })?.agents;
+        if (Array.isArray(list)) setAgentCount(list.length);
       })
       .catch(() => setAgentCount(null));
   }, []);

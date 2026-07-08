@@ -429,7 +429,7 @@ export default function CronsPage() {
           setCrons(cronData.crons);
           setPipelines(cronData.pipelines || []);
         }
-        setAgents(a);
+        setAgents(Array.isArray(a) ? a : a?.agents ?? []);
         setLastRefresh(new Date());
         setLoading(false);
         setRefreshing(false);

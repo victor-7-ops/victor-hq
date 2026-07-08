@@ -49,13 +49,13 @@ function buildEdges(
     const sel = agentMap.get(selectedId)
     if (sel) {
       if (sel.reportsTo) selectedAgentIds.add(sel.reportsTo)
-      sel.directReports.forEach((id) => selectedAgentIds.add(id))
+      ;(sel.directReports ?? []).forEach((id) => selectedAgentIds.add(id))
     }
   }
 
   const edges: Edge[] = []
   for (const agent of agents) {
-    for (const childId of agent.directReports) {
+    for (const childId of agent.directReports ?? []) {
       if (!agentMap.has(childId)) continue
       const isHighlighted =
         selectedId && selectedAgentIds.has(agent.id) && selectedAgentIds.has(childId)
@@ -147,7 +147,7 @@ function buildTeamLayout(
     for (const id of ids) {
       const a = agentMap.get(id)
       if (!a) continue
-      for (const cid of a.directReports) {
+      for (const cid of a.directReports ?? []) {
         if (ids.includes(cid)) colEdges.push([id, cid])
       }
     }
@@ -261,7 +261,7 @@ function buildHierarchyLayout(
   const allIds = agents.map((a) => a.id)
   const allEdges: [string, string][] = []
   for (const a of agents) {
-    for (const cid of a.directReports) {
+    for (const cid of a.directReports ?? []) {
       if (agentMap.has(cid)) allEdges.push([a.id, cid])
     }
   }
