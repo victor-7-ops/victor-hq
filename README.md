@@ -43,7 +43,7 @@ At startup, `instrumentation.ts` validates env vars (`lib/env.ts`) and logs any 
 
 See `.env.local.example` for the full annotated list.
 
-Tests: `npm test` (vitest, unit) and `npx playwright test` (e2e smoke flows in `tests/e2e/`).
+Tests: `npm test` (vitest, unit, 85 tests) and `npx playwright test` (e2e smoke flows in `tests/e2e/`, 10 specs covering home, chat, kanban, costs, memory, security, and agent-orchestrator).
 
 ## Degraded-mode behavior
 
@@ -51,8 +51,9 @@ Built to stay usable when its dependencies aren't running, rather than hang or c
 
 - **OpenClaw gateway offline** — chat, TTS, transcribe, and competitor-research routes time out after 5s and return a JSON error instead of hanging; the chat UI shows a clear failure message.
 - **Agent Orchestrator daemon offline** — `/agent-orchestrator` shows cached project/session data (dimmed, with a "not running — showing cached data" banner + Retry) instead of spinning forever; with no cache yet, it shows a clear "not running" state.
-- **`openclaw` CLI missing/slow** — model/session status calls run asynchronously (no more `execSync`) and are cached, so a slow or hanging CLI no longer freezes the dev server for other requests.
+- **`openclaw` CLI missing/slow** — model/session status calls run asynchronously (no more `execSync`) and are cached; `instrumentation.ts` fire-and-forget warms those caches at server start so the first real request doesn't pay the cold-CLI tax.
 - **Credentials in API responses** — config/posture data that could contain API keys or tokens is redacted (`lib/sanitize.ts`) before it reaches the client.
+- **Agent avatar missing** — `/api/avatar/[agentId]` returns a generated initials SVG instead of a 404, so avatars never render broken.
 
 ## Known rough edges
 
