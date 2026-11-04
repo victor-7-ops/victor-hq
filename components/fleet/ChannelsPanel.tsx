@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Radio, Wifi, WifiOff } from 'lucide-react';
+import type { AgentData } from '@/types';
 
 interface ChannelBinding {
   channel: string;
@@ -15,7 +16,7 @@ interface ChannelsPanelData {
   channels: ChannelBinding[];
 }
 
-function parseChannelsFromAgents(data: any): ChannelBinding[] {
+function parseChannelsFromAgents(data: { agents?: AgentData[] } | undefined): ChannelBinding[] {
   const channels: ChannelBinding[] = [];
 
   if (!data?.agents || !Array.isArray(data.agents)) return channels;
@@ -47,22 +48,22 @@ function parseChannelsFromAgents(data: any): ChannelBinding[] {
 
   for (const channel of channelTypes) {
     // Find the agent bound to this channel
-    const boundAgent = data.agents.find((a: any) => {
+    const boundAgent = data.agents.find((a) => {
       const key = (a.sessionKey || a.id || '').toLowerCase();
       const name = (a.name || '').toLowerCase();
       return key.includes(channel) || name.includes(channel);
     });
 
     // Detect group bindings
-    const groupAgent = data.agents.find((a: any) => {
+    const groupAgent = data.agents.find((a) => {
       const key = (a.sessionKey || '').toLowerCase();
       return key.includes(channel) && key.includes('group');
     });
 
     channels.push({
       channel,
-      connected: !!boundAgent || data.agents.some((a: any) => a.status === 'online'),
-      agentId: boundAgent?.id || data.agents.find((a: any) => a.role === 'orchestrator')?.id || null,
+      connected: !!boundAgent || data.agents.some((a) => a.status === 'online'),
+      agentId: boundAgent?.id || data.agents.find((a) => a.role === 'orchestrator')?.id || null,
       group: groupAgent ? (groupAgent.sessionKey || null) : null,
     });
   }
@@ -96,7 +97,7 @@ function channelIcon(channel: string) {
 }
 
 export default function ChannelsPanel() {
-  const { data, isLoading } = useQuery<{ agents: any[] }>({
+  const { data, isLoading } = useQuery<{ agents: AgentData[] }>({
     queryKey: ['agents'],
     queryFn: () => fetch('/api/agents').then((r) => r.json()),
     refetchInterval: 30_000,

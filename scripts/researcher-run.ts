@@ -123,7 +123,7 @@ function extractDomain(url: string): string {
   }
 }
 
-async function performSearch(query: string, freshness: string = 'pw'): Promise<unknown[]> {
+export async function performSearch(query: string, freshness: string = 'pw'): Promise<unknown[]> {
   try {
     const output = execFileSync(
       'openclaw',
@@ -250,4 +250,8 @@ async function main() {
   }
 }
 
-main();
+// Only run when executed directly (e.g. `tsx scripts/researcher-run.ts`),
+// not when imported (e.g. by tests importing performSearch).
+if (import.meta.url === `file://${process.argv[1]}`) {
+  main();
+}

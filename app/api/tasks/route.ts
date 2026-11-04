@@ -4,13 +4,26 @@ import { getConfig } from '@/lib/db/queries';
 import { getDb } from '@/lib/db/schema';
 import { resolveHomePath } from '@/lib/utils';
 import { errorMessage } from '@/lib/api-error';
+import type { DevTask, DevTaskStatus, Priority, DesignStatus } from '@/types';
 
 export const dynamic = 'force-dynamic';
+
+interface TaskOverrideRow {
+  id: string;
+  status?: string;
+  priority?: string;
+  sprint_id?: string | null;
+  design_status?: string;
+  manual_notes?: string;
+  title?: string;
+  description?: string;
+  type?: string;
+}
 
 export async function GET() {
   try {
     const config = getConfig();
-    let tasks: any[] = [];
+    let tasks: DevTask[] = [];
 
     if (config.projectRepoPath) {
       const repoPath = resolveHomePath(config.projectRepoPath);
@@ -19,21 +32,21 @@ export async function GET() {
 
     // Merge with SQLite overrides (actual table is task_overrides)
     const db = getDb();
-    let overrides: any[] = [];
+    let overrides: TaskOverrideRow[] = [];
     try {
-      overrides = db.prepare('SELECT * FROM task_overrides').all() as any[];
+      overrides = db.prepare('SELECT * FROM task_overrides').all() as TaskOverrideRow[];
     } catch {
       // Table may not exist yet
     }
-    const overrideMap = new Map(overrides.map((o: any) => [o.id, o]));
+    const overrideMap = new Map(overrides.map((o) => [o.id, o]));
 
     for (const task of tasks) {
       const override = overrideMap.get(task.id);
       if (override) {
-        if (override.status) task.status = override.status;
-        if (override.priority) task.priority = override.priority;
+        if (override.status) task.status = override.status as DevTaskStatus;
+        if (override.priority) task.priority = override.priority as Priority;
         if (override.sprint_id) task.sprintId = override.sprint_id;
-        if (override.design_status) task.designStatus = override.design_status;
+        if (override.design_status) task.designStatus = override.design_status as DesignStatus;
         if (override.manual_notes) task.notes = override.manual_notes;
       }
     }
@@ -54,16 +67,16 @@ export async function PATCH(request: NextRequest) {
     }
 
     const db = getDb();
-    let existing: any = null;
+    let existing: TaskOverrideRow | null = null;
     try {
-      existing = db.prepare('SELECT * FROM task_overrides WHERE id = ?').get(id);
+      existing = (db.prepare('SELECT * FROM task_overrides WHERE id = ?').get(id) as TaskOverrideRow) ?? null;
     } catch {
       // Table may not exist
     }
 
     if (existing) {
       const fields: string[] = [];
-      const values: any[] = [];
+      const values: (string | number | null)[] = [];
       const fieldMap: Record<string, string> = {
         status: 'status', priority: 'priority', sprintId: 'sprint_id',
         designStatus: 'design_status', notes: 'manual_notes', title: 'title',
@@ -80,7 +93,7 @@ export async function PATCH(request: NextRequest) {
             db.prepare(`
               INSERT INTO task_history (task_id, change_json)
               VALUES (?, ?)
-            `).run(id, JSON.stringify({ field: key, old: (existing as any)[col], new: updates[key] }));
+            `).run(id, JSON.stringify({ field: key, old: (existing as TaskOverrideRow)[col as keyof TaskOverrideRow], new: updates[key] }));
           } catch {
             // task_history may not exist
           }

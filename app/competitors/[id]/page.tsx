@@ -39,6 +39,19 @@ interface FetchedUpdate {
   date: string;
 }
 
+// Loose shape of items returned by /api/market-intel and /api/practitioner-signals.
+// Both endpoints return heterogeneous signal rows; only these fields are read here.
+interface SignalItem {
+  competitor?: string;
+  title?: string;
+  context?: string;
+  source?: string;
+  url?: string;
+  date?: string;
+  verbatim?: string;
+  type?: string;
+}
+
 interface FetchedFeedback {
   positiveThemes: string[];
   complaints: string[];
@@ -163,15 +176,15 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ id:
       const res = await fetch(`/api/market-intel?limit=100&projectId=${activeProjectId}`);
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      const items = Array.isArray(data) ? data : data.items || data.signals || [];
+      const items: SignalItem[] = Array.isArray(data) ? data : data.items || data.signals || [];
       const name = competitor.name.toLowerCase();
       const relevant: FetchedUpdate[] = items
-        .filter((s: any) => {
+        .filter((s) => {
           const text = `${s.competitor || ''} ${s.title || ''}`.toLowerCase();
           return text.includes(name);
         })
         .slice(0, 10)
-        .map((s: any) => ({ title: s.title, summary: s.context || '', source: s.source || '', url: s.url || '', date: s.date || '' }));
+        .map((s) => ({ title: s.title || '', summary: s.context || '', source: s.source || '', url: s.url || '', date: s.date || '' }));
 
       await fetch(`/api/competitors/${id}`, {
         method: 'PUT',
@@ -191,17 +204,17 @@ export default function CompetitorDetailPage({ params }: { params: Promise<{ id:
       const res = await fetch(`/api/practitioner-signals?limit=100&projectId=${activeProjectId}`);
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
-      const items = Array.isArray(data) ? data : data.items || data.signals || [];
+      const items: SignalItem[] = Array.isArray(data) ? data : data.items || data.signals || [];
       const name = competitor.name.toLowerCase();
-      const relevant = items.filter((s: any) => {
+      const relevant = items.filter((s) => {
         const text = `${s.title || ''} ${s.verbatim || ''} ${s.context || ''}`.toLowerCase();
         return text.includes(name);
       });
 
       const fb: FetchedFeedback = {
-        positiveThemes: relevant.filter((s: any) => s.type === 'positive' || s.type === 'tool-review').slice(0, 5).map((s: any) => s.title),
-        complaints: relevant.filter((s: any) => s.type === 'pain-point' || s.type === 'frustration' || s.type === 'tool-switch').slice(0, 5).map((s: any) => s.title),
-        quotes: relevant.filter((s: any) => s.verbatim).slice(0, 5).map((s: any) => s.verbatim),
+        positiveThemes: relevant.filter((s) => s.type === 'positive' || s.type === 'tool-review').slice(0, 5).map((s) => s.title || ''),
+        complaints: relevant.filter((s) => s.type === 'pain-point' || s.type === 'frustration' || s.type === 'tool-switch').slice(0, 5).map((s) => s.title || ''),
+        quotes: relevant.filter((s) => s.verbatim).slice(0, 5).map((s) => s.verbatim || ''),
         fetchedAt: new Date().toISOString(),
       };
 

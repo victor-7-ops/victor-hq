@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
 import { Puzzle, GitBranch, CheckCircle2, XCircle } from 'lucide-react';
+import type { GatewayStatus, AgentData } from '@/types';
 
 interface HookEntry {
   name: string;
@@ -19,7 +20,15 @@ interface HooksPluginsData {
   plugins: PluginEntry[];
 }
 
-function parseHooksPlugins(gateway: any, agents: any): HooksPluginsData {
+interface AgentsResponse {
+  agents?: AgentData[];
+  modelsConfig?: { fallbacks?: string[] };
+}
+
+function parseHooksPlugins(
+  gateway: GatewayStatus | undefined,
+  agents: AgentsResponse | undefined,
+): HooksPluginsData {
   const hooks: HookEntry[] = [];
   const plugins: PluginEntry[] = [];
 
@@ -40,7 +49,7 @@ function parseHooksPlugins(gateway: any, agents: any): HooksPluginsData {
       hooks.push({
         name: 'provider-health-probe',
         enabled: Object.values(gateway.providerHealth).some(
-          (h: any) => h === 'healthy' || h === 'degraded',
+          (h) => h === 'healthy' || h === 'degraded',
         ),
       });
     }
@@ -62,7 +71,7 @@ function parseHooksPlugins(gateway: any, agents: any): HooksPluginsData {
 
   // If agents have sub-agents, the orchestration plugin is active
   if (agents?.agents && Array.isArray(agents.agents)) {
-    const subAgents = agents.agents.filter((a: any) => a.role === 'sub-agent');
+    const subAgents = agents.agents.filter((a) => a.role === 'sub-agent');
     if (subAgents.length > 0) {
       plugins.push({
         name: 'multi-agent-orchestration',
@@ -72,7 +81,7 @@ function parseHooksPlugins(gateway: any, agents: any): HooksPluginsData {
 
     // Detect cron plugin from agent names/sessions
     const hasCron = agents.agents.some(
-      (a: any) =>
+      (a) =>
         (a.sessionKey || '').includes('cron') ||
         (a.name || '').toLowerCase().includes('cron'),
     );
@@ -85,13 +94,13 @@ function parseHooksPlugins(gateway: any, agents: any): HooksPluginsData {
 }
 
 export default function HooksPluginsPanel() {
-  const { data: gateway, isLoading: gwLoading } = useQuery({
+  const { data: gateway, isLoading: gwLoading } = useQuery<GatewayStatus>({
     queryKey: ['gateway'],
     queryFn: () => fetch('/api/gateway').then((r) => r.json()),
     refetchInterval: 30_000,
   });
 
-  const { data: agents, isLoading: agentsLoading } = useQuery({
+  const { data: agents, isLoading: agentsLoading } = useQuery<AgentsResponse>({
     queryKey: ['agents'],
     queryFn: () => fetch('/api/agents').then((r) => r.json()),
     refetchInterval: 30_000,

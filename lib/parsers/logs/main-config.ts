@@ -4,13 +4,24 @@ import { fs, path, getDataDir, readFileIfExists, readJsonIfExists } from './shar
 // --- Main Config ---
 
 export interface OpenClawConfig {
-  meta?: { version?: string; lastTouched?: string };
-  gateway?: { port?: number; loopback?: boolean; authToken?: string; tailscaleServe?: any };
-  agents?: { defaults?: { model?: string }; heartbeat?: any; sandbox?: any };
-  plugins?: { enabled?: string[]; installs?: any };
-  channels?: { telegram?: any };
+  meta?: { version?: string; lastTouched?: string; lastTouchedVersion?: string };
+  gateway?: {
+    port?: number;
+    loopback?: boolean;
+    authToken?: string;
+    tailscaleServe?: string | { url?: string };
+  };
+  agents?: {
+    defaults?: { model?: string };
+    heartbeat?: unknown;
+    sandbox?: unknown;
+    contextPruningTTL?: number;
+    cacheRetention?: number;
+  };
+  plugins?: { enabled?: string[]; installs?: unknown };
+  channels?: { telegram?: unknown };
   ui?: { assistantName?: string };
-  tools?: any;
+  tools?: unknown;
   env?: Record<string, string>;
 }
 
@@ -28,7 +39,7 @@ export function parseGatewayStatus(dataDir?: string): GatewayStatus {
   // Try to detect gateway PID from gateway.log
   const gatewayLog = readFileIfExists(path.join(dir, 'logs', 'gateway.log'));
   let pid: number | null = null;
-  let version = (config.meta as any)?.lastTouchedVersion || config.meta?.version || 'unknown';
+  let version = config.meta?.lastTouchedVersion || config.meta?.version || 'unknown';
   let uptime = 0;
 
   if (gatewayLog) {
@@ -51,15 +62,14 @@ export function parseGatewayStatus(dataDir?: string): GatewayStatus {
   }
 
   // Check device token validity
-  const deviceAuth = readJsonIfExists<Record<string, unknown> | null>(path.join(dir, 'identity', 'device.json'), null);
-  const deviceTokenValid = !!(deviceAuth as any)?.deviceId;
+  const deviceAuth = readJsonIfExists<{ deviceId?: string } | null>(path.join(dir, 'identity', 'device.json'), null);
+  const deviceTokenValid = !!deviceAuth?.deviceId;
 
   // Determine cache retention mode
   let cacheRetentionMode: 'short' | 'long' | 'unknown' = 'unknown';
   if (config.agents?.defaults) {
-    const agentConfig = config.agents as any;
-    if (agentConfig.contextPruningTTL || agentConfig.cacheRetention) {
-      const ttl = agentConfig.contextPruningTTL || agentConfig.cacheRetention;
+    const ttl = config.agents.contextPruningTTL || config.agents.cacheRetention;
+    if (ttl) {
       cacheRetentionMode = ttl > 3600 ? 'long' : 'short';
     }
   }

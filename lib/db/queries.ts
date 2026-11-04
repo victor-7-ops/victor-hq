@@ -48,7 +48,7 @@ export function getConfig(): DashboardConfig {
 export function updateConfig(updates: Partial<DashboardConfig>) {
   const db = getDb();
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   const fieldMap: Record<string, string> = {
     openclawDataDir: 'openclaw_path',
@@ -88,12 +88,12 @@ export function getMemoryEntries(opts?: {
       JOIN memory_entries_fts f ON m.id = f.id
       WHERE memory_entries_fts MATCH ?
       ORDER BY m.created_at DESC LIMIT ? OFFSET ?
-    `).all(opts.search, limit, offset) as any[];
+    `).all(opts.search, limit, offset) as unknown[];
     return rows.map(rowToMemoryEntry);
   }
 
   let sql = 'SELECT * FROM memory_entries';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts?.type) {
     sql += ' WHERE type = ?';
     params.push(opts.type);
@@ -101,7 +101,7 @@ export function getMemoryEntries(opts?: {
   sql += ' ORDER BY created_at DESC LIMIT ? OFFSET ?';
   params.push(limit, offset);
 
-  return (db.prepare(sql).all(...params) as any[]).map(rowToMemoryEntry);
+  return (db.prepare(sql).all(...params) as unknown[]).map(rowToMemoryEntry);
 }
 
 export function createMemoryEntry(entry: Omit<MemoryEntry, 'id' | 'createdAt' | 'updatedAt'>): MemoryEntry {
@@ -145,13 +145,17 @@ function rowToMemoryEntry(row: any): MemoryEntry {
 export function getAlerts(acknowledged?: boolean): SecurityAlert[] {
   const db = getDb();
   let sql = 'SELECT * FROM alerts';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (acknowledged !== undefined) {
     sql += ' WHERE acknowledged = ?';
     params.push(acknowledged ? 1 : 0);
   }
   sql += ' ORDER BY created_at DESC LIMIT 100';
-  return (db.prepare(sql).all(...params) as any[]).map((r) => ({
+  interface AlertRow {
+    id: string; category: SecurityAlert['type']; severity: SecurityAlert['severity']; title: string;
+    message: string; details: string | null; acknowledged: number; created_at: string;
+  }
+  return (db.prepare(sql).all(...params) as AlertRow[]).map((r) => ({
     id: r.id,
     type: r.category,
     severity: r.severity,
@@ -207,13 +211,17 @@ export function upsertDailyCost(date: string, data: {
 export function getDailyCosts(days: number = 30) {
   return getDb().prepare(`
     SELECT * FROM daily_metrics ORDER BY date DESC LIMIT ?
-  `).all(days) as any[];
+  `).all(days) as unknown[];
 }
 
 // --- Compaction Log ---
 
 export function getCompactionLog(): CompactionEntry[] {
-  return (getDb().prepare('SELECT * FROM compaction_events ORDER BY occurred_at DESC LIMIT 50').all() as any[]).map((r) => ({
+  interface CompactionRow {
+    id: string; agent_id: string; tokens_before?: number;
+    tokens_after?: number; reduction_percent?: number; occurred_at: string;
+  }
+  return (getDb().prepare('SELECT * FROM compaction_events ORDER BY occurred_at DESC LIMIT 50').all() as CompactionRow[]).map((r) => ({
     id: r.id,
     agentId: r.agent_id,
     agentName: r.agent_id,
@@ -245,6 +253,10 @@ export function getAgentMetricsSummary(): Array<{
   lastActive: string | null;
 }> {
   const db = getDb();
+  interface MetricsRow {
+    agent_id: string; total_tokens_in: number; total_tokens_out: number;
+    avg_latency_ms: number; total_requests: number; error_count: number; last_active: string;
+  }
   const rows = db.prepare(`
     SELECT
       agent_id,
@@ -256,12 +268,12 @@ export function getAgentMetricsSummary(): Array<{
       MAX(timestamp) as last_active
     FROM agent_performance_metrics
     GROUP BY agent_id
-  `).all() as any[];
+  `).all() as MetricsRow[];
 
   return rows.map((r) => {
     const lastRow = db.prepare(
       'SELECT model FROM agent_performance_metrics WHERE agent_id = ? ORDER BY timestamp DESC LIMIT 1'
-    ).get(r.agent_id) as any;
+    ).get(r.agent_id) as { model?: string } | undefined;
     return {
       agentId: r.agent_id,
       totalTokensIn: r.total_tokens_in,
@@ -282,7 +294,7 @@ export function getTechUpdates(opts?: { limit?: number; category?: string; proje
   const limit = opts?.limit || 500;
   const pid = opts?.projectId || null;
   let sql = 'SELECT * FROM tech_updates WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
@@ -293,7 +305,7 @@ export function getTechUpdates(opts?: { limit?: number; category?: string; proje
   }
   sql += ' ORDER BY date_iso DESC, ingested_at DESC LIMIT ?';
   params.push(limit);
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function getTechUpdateCategories(opts?: { projectId?: string }): Array<{ id: string; label: string; icon: string; count: number }> {
@@ -301,13 +313,13 @@ export function getTechUpdateCategories(opts?: { projectId?: string }): Array<{ 
   const pid = opts?.projectId || null;
   let sql = `SELECT category_id as id, category_label as label, category_icon as icon, COUNT(*) as count
     FROM tech_updates WHERE deleted = 0`;
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
   }
   sql += ' GROUP BY category_id ORDER BY count DESC';
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as Array<{ id: string; label: string; icon: string; count: number }>;
 }
 
 // --- Todos ---
@@ -315,13 +327,13 @@ export function getTechUpdateCategories(opts?: { projectId?: string }): Array<{ 
 export function getTodos(opts?: { status?: string }): any[] {
   const db = getDb();
   let sql = 'SELECT * FROM todos';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (opts?.status) {
     sql += ' WHERE status = ?';
     params.push(opts.status);
   }
   sql += " ORDER BY CASE status WHEN 'open' THEN 0 WHEN 'done' THEN 1 ELSE 2 END, CASE priority WHEN 'critical' THEN 0 WHEN 'high' THEN 1 WHEN 'medium' THEN 2 WHEN 'low' THEN 3 ELSE 4 END, deadline ASC, created_at DESC";
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function createTodo(todo: {
@@ -353,7 +365,7 @@ export function updateTodo(id: string, updates: {
 }): void {
   const db = getDb();
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
 
   if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
   if (updates.description !== undefined) { fields.push('description = ?'); values.push(updates.description); }
@@ -438,7 +450,7 @@ export function getMarketSignals(opts?: { type?: string; limit?: number; project
   const limit = opts?.limit || 100;
   const pid = opts?.projectId || null;
   let sql = 'SELECT * FROM market_signals WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
@@ -449,7 +461,7 @@ export function getMarketSignals(opts?: { type?: string; limit?: number; project
   }
   sql += ' ORDER BY date_iso DESC, ingested_at DESC LIMIT ?';
   params.push(limit);
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function getMarketSignalTypes(opts?: { projectId?: string }): Array<{ type: string; count: number }> {
@@ -457,13 +469,13 @@ export function getMarketSignalTypes(opts?: { projectId?: string }): Array<{ typ
   const pid = opts?.projectId || null;
   let sql = `SELECT type, COUNT(*) as count
     FROM market_signals WHERE deleted = 0`;
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
   }
   sql += ' GROUP BY type ORDER BY count DESC';
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as Array<{ type: string; count: number }>;
 }
 
 // --- Practitioner Signals ---
@@ -501,7 +513,7 @@ export function getPractitionerSignals(opts?: { type?: string; limit?: number; p
   const limit = opts?.limit || 100;
   const pid = opts?.projectId || null;
   let sql = 'SELECT * FROM practitioner_signals WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
@@ -512,7 +524,7 @@ export function getPractitionerSignals(opts?: { type?: string; limit?: number; p
   }
   sql += ' ORDER BY date_iso DESC, ingested_at DESC LIMIT ?';
   params.push(limit);
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function getPractitionerSignalTypes(opts?: { projectId?: string }): Array<{ type: string; count: number }> {
@@ -520,13 +532,13 @@ export function getPractitionerSignalTypes(opts?: { projectId?: string }): Array
   const pid = opts?.projectId || null;
   let sql = `SELECT type, COUNT(*) as count
     FROM practitioner_signals WHERE deleted = 0`;
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
   }
   sql += ' GROUP BY type ORDER BY count DESC';
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as Array<{ type: string; count: number }>;
 }
 
 // --- Feed Counts (lightweight) ---
@@ -570,7 +582,7 @@ export function getDSRunReports(opts?: {
 }): DSRunReport[] {
   const db = getDb();
   const conditions: string[] = [];
-  const params: any[] = [];
+  const params: unknown[] = [];
 
   if (opts?.component) { conditions.push('component = ?'); params.push(opts.component); }
   if (opts?.batch) { conditions.push('batch = ?'); params.push(opts.batch); }
@@ -585,7 +597,7 @@ export function getDSRunReports(opts?: {
   sql += ' ORDER BY timestamp DESC';
   sql += ` LIMIT ${opts?.limit || 200}`;
 
-  return (db.prepare(sql).all(...params) as any[]).map(rowToDSRunReport);
+  return (db.prepare(sql).all(...params) as unknown[]).map(rowToDSRunReport);
 }
 
 export function getDSLatestPerComponent(): DSRunReport[] {
@@ -599,7 +611,7 @@ export function getDSLatestPerComponent(): DSRunReport[] {
       GROUP BY component
     ) latest ON r.component = latest.component AND r.timestamp = latest.max_ts
     ORDER BY r.component
-  `).all() as any[];
+  `).all() as unknown[];
   return rows.map(rowToDSRunReport);
 }
 
@@ -633,6 +645,10 @@ export function getDSSummary(): DSSummary {
   }));
 
   // Aggregates
+  interface DSAggregateRow {
+    total_cost: number; component_count: number; total_reports: number;
+    avg_latency: number; total_raw_values: number; red_count: number;
+  }
   const agg = db.prepare(`
     SELECT
       COALESCE(SUM(cost_usd), 0) as total_cost,
@@ -642,7 +658,7 @@ export function getDSSummary(): DSSummary {
       COALESCE(SUM(raw_values), 0) as total_raw_values,
       COALESCE(SUM(CASE WHEN status = 'red' THEN 1 ELSE 0 END), 0) as red_count
     FROM ds_run_reports
-  `).get() as any;
+  `).get() as DSAggregateRow;
 
   return {
     foundationsHealth,
@@ -660,13 +676,13 @@ export function getDSSummary(): DSSummary {
 
 export function getDSDistinctComponents(): string[] {
   const db = getDb();
-  return (db.prepare('SELECT DISTINCT component FROM ds_run_reports WHERE component IS NOT NULL ORDER BY component').all() as any[])
+  return (db.prepare('SELECT DISTINCT component FROM ds_run_reports WHERE component IS NOT NULL ORDER BY component').all() as Array<{ component: string }>)
     .map((r) => r.component);
 }
 
 export function getDSDistinctBatches(): string[] {
   const db = getDb();
-  return (db.prepare('SELECT DISTINCT batch FROM ds_run_reports WHERE batch IS NOT NULL ORDER BY batch').all() as any[])
+  return (db.prepare('SELECT DISTINCT batch FROM ds_run_reports WHERE batch IS NOT NULL ORDER BY batch').all() as Array<{ batch: string }>)
     .map((r) => r.batch);
 }
 
@@ -677,7 +693,7 @@ export function getReferenceFiles(opts?: { tag?: string; search?: string; limit?
   const limit = opts?.limit || 100;
   const pid = opts?.projectId || null;
   let sql = 'SELECT * FROM reference_files WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
@@ -692,7 +708,7 @@ export function getReferenceFiles(opts?: { tag?: string; search?: string; limit?
   }
   sql += ' ORDER BY updated_at DESC LIMIT ?';
   params.push(limit);
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function getReferenceFile(id: string): any | undefined {
@@ -712,7 +728,7 @@ export function insertReferenceFile(file: { title: string; content: string; tags
 export function updateReferenceFile(id: string, updates: { title?: string; content?: string; tags?: string[] }): void {
   const db = getDb();
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   if (updates.title !== undefined) { fields.push('title = ?'); values.push(updates.title); }
   if (updates.content !== undefined) { fields.push('content = ?'); values.push(updates.content); }
   if (updates.tags !== undefined) { fields.push('tags_json = ?'); values.push(JSON.stringify(updates.tags)); }
@@ -730,12 +746,12 @@ export function getReferenceFileTags(opts?: { projectId?: string }): string[] {
   const db = getDb();
   const pid = opts?.projectId || null;
   let sql = 'SELECT tags_json FROM reference_files WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
   }
-  const rows = db.prepare(sql).all(...params) as any[];
+  const rows = db.prepare(sql).all(...params) as Array<{ tags_json: string | null }>;
   const tagSet = new Set<string>();
   for (const row of rows) {
     try {
@@ -753,14 +769,14 @@ export function getCompetitors(opts?: { limit?: number; projectId?: string }): a
   const limit = opts?.limit || 100;
   const pid = opts?.projectId || null;
   let sql = 'SELECT * FROM competitors WHERE deleted = 0';
-  const params: any[] = [];
+  const params: unknown[] = [];
   if (pid) {
     sql += ' AND project_id = ?';
     params.push(pid);
   }
   sql += ' ORDER BY name ASC LIMIT ?';
   params.push(limit);
-  return db.prepare(sql).all(...params) as any[];
+  return db.prepare(sql).all(...params) as unknown[];
 }
 
 export function getCompetitor(id: string): any | undefined {
@@ -784,7 +800,7 @@ export function updateCompetitor(id: string, updates: {
 }): void {
   const db = getDb();
   const fields: string[] = [];
-  const values: any[] = [];
+  const values: unknown[] = [];
   for (const [key, val] of Object.entries(updates)) {
     if (val !== undefined) { fields.push(`${key} = ?`); values.push(val); }
   }
@@ -833,12 +849,12 @@ export interface AOProjectOwner {
 }
 
 export function getProjectOwner(projectId: string): string | null {
-  const row = getDb().prepare('SELECT agent_id FROM ao_project_owners WHERE project_id = ?').get(projectId) as any;
+  const row = getDb().prepare('SELECT agent_id FROM ao_project_owners WHERE project_id = ?').get(projectId) as { agent_id: string } | undefined;
   return row ? row.agent_id : null;
 }
 
 export function getOwnedProjectIds(agentId: string): string[] {
-  const rows = getDb().prepare('SELECT project_id FROM ao_project_owners WHERE agent_id = ?').all(agentId) as any[];
+  const rows = getDb().prepare('SELECT project_id FROM ao_project_owners WHERE agent_id = ?').all(agentId) as Array<{ project_id: string }>;
   return rows.map(r => r.project_id);
 }
 
@@ -855,7 +871,7 @@ export function clearProjectOwner(projectId: string): void {
 }
 
 export function getAllProjectOwners(): AOProjectOwner[] {
-  const rows = getDb().prepare('SELECT project_id, agent_id, assigned_at FROM ao_project_owners').all() as any[];
+  const rows = getDb().prepare('SELECT project_id, agent_id, assigned_at FROM ao_project_owners').all() as Array<{ project_id: string; agent_id: string; assigned_at: string }>;
   return rows.map(r => ({ projectId: r.project_id, agentId: r.agent_id, assignedAt: r.assigned_at }));
 }
 
