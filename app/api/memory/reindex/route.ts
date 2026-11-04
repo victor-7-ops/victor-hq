@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { requireEnv } from '@/lib/env'
 
 export async function POST() {
@@ -14,7 +14,7 @@ export async function POST() {
   }
 
   try {
-    const output = execSync(`${bin} memory reindex`, {
+    const output = execFileSync(bin, ['memory', 'reindex'], {
       timeout: 30000,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],

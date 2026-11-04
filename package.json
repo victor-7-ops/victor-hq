@@ -4,14 +4,14 @@
   "description": "Victor HQ — personal AI command centre. Fork of OpenClaw Dashboard with Agent Orchestrator integration.",
   "private": true,
   "license": "MIT",
-  "author": "OpenClaw",
+  "author": "victor-7-ops",
   "repository": {
     "type": "git",
-    "url": "https://github.com/OpenClaw/openclaw-dashboard.git"
+    "url": "https://github.com/victor-7-ops/victor-hq.git"
   },
-  "homepage": "https://github.com/OpenClaw/openclaw-dashboard#readme",
+  "homepage": "https://github.com/victor-7-ops/victor-hq#readme",
   "bugs": {
-    "url": "https://github.com/OpenClaw/openclaw-dashboard/issues"
+    "url": "https://github.com/victor-7-ops/victor-hq/issues"
   },
   "scripts": {
     "dev": "next dev -p 3333",

@@ -1,6 +1,6 @@
 import { existsSync, statSync, writeFileSync, renameSync } from 'fs'
 import { join, resolve } from 'path'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { requireEnv } from '@/lib/env'
 
 // ── Path validation ─────────────────────────────────────────────
@@ -56,12 +56,12 @@ export function resolveMemoryPath(workspacePath: string, relativePath: string): 
  */
 export function snapshotFile(absPath: string, workspacePath: string): void {
   try {
-    execSync(`git add "${absPath}"`, {
+    execFileSync('git', ['add', absPath], {
       cwd: workspacePath,
       timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'],
     })
-    execSync(`git commit -m "dashboard: snapshot before edit" --allow-empty`, {
+    execFileSync('git', ['commit', '-m', 'dashboard: snapshot before edit', '--allow-empty'], {
       cwd: workspacePath,
       timeout: 5000,
       stdio: ['pipe', 'pipe', 'pipe'],

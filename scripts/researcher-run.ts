@@ -1,4 +1,4 @@
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
@@ -125,8 +125,11 @@ function extractDomain(url: string): string {
 
 async function performSearch(query: string, freshness: string = 'pw'): Promise<unknown[]> {
   try {
-    const cmd = `openclaw web_search --query "${query}" --freshness ${freshness} --count 5`;
-    const output = execSync(cmd, { encoding: 'utf-8', timeout: 30000 });
+    const output = execFileSync(
+      'openclaw',
+      ['web_search', '--query', query, '--freshness', freshness, '--count', '5'],
+      { encoding: 'utf-8', timeout: 30000 }
+    );
     const parsed = JSON.parse(output);
     
     if (parsed.citations && Array.isArray(parsed.citations)) {

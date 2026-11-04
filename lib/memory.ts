@@ -1,7 +1,7 @@
 import type { MemoryFileInfo, MemoryConfig, MemoryStatus, MemoryStats } from '@/lib/types'
 import { readFileSync, existsSync, statSync, readdirSync } from 'fs'
 import { join, basename, dirname } from 'path'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import { requireEnv } from '@/lib/env'
 
 // ── Date pattern for daily logs ─────────────────────────────────
@@ -213,7 +213,7 @@ export function getMemoryStatus(): MemoryStatus {
   }
 
   try {
-    const output = execSync(`${bin} memory status --deep`, {
+    const output = execFileSync(bin, ['memory', 'status', '--deep'], {
       timeout: 15000,
       encoding: 'utf-8',
       stdio: ['pipe', 'pipe', 'pipe'],

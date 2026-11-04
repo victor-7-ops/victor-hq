@@ -1,5 +1,5 @@
 import { CronJob, CronDelivery } from '@/lib/types'
-import { execSync } from 'child_process'
+import { execFileSync } from 'child_process'
 import fs from 'fs'
 import path from 'path'
 import { parseSchedule, describeCron } from './cron-utils'
@@ -60,7 +60,7 @@ export async function getCrons(): Promise<CronJob[]> {
 async function _getCronsUncached(): Promise<CronJob[]> {
   try {
     const openclawBin = requireEnv('OPENCLAW_BIN')
-    const raw = execSync(`${openclawBin} cron list --json`, {
+    const raw = execFileSync(openclawBin, ['cron', 'list', '--json'], {
       encoding: 'utf-8',
       timeout: 20000,
     })
